@@ -1,0 +1,91 @@
+# Kabuto Relay Server Configuration
+
+# Server Settings
+server:
+  host: 0.0.0.0
+  port: 5000
+  debug: false
+  workers: 4
+
+# Security
+security:
+  webhook_secret: "your-webhook-secret-change-this"
+  api_key: "your-api-key-change-this"
+  admin_password: "your-admin-password-change-this"
+  allowed_ips:
+    - "127.0.0.1"
+    - "192.168.1.0/24"  # Adjust to your network
+
+# Database
+database:
+  url: "sqlite:///./data/kabuto.db"
+  # For production, use PostgreSQL:
+  # url: "postgresql://user:password@localhost/kabuto"
+  echo: false
+
+# Redis
+redis:
+  host: localhost
+  port: 6379
+  db: 0
+  password: null
+  decode_responses: true
+
+# Risk Management
+risk_control:
+  max_total_exposure: 1000000  # 100万円
+  max_position_per_ticker: 200000  # 20万円
+  max_open_positions: 5
+  max_sector_exposure_pct: 0.30
+  max_daily_entries: 5
+  max_daily_trades: 15
+  max_trades_per_hour: 5
+  max_consecutive_losses: 5
+  max_daily_loss: -50000  # -5万円
+
+# Cooldown Settings (seconds)
+cooldown:
+  buy_same_ticker: 1800  # 30 minutes
+  buy_any_ticker: 300     # 5 minutes
+  sell_same_ticker: 900   # 15 minutes
+  sell_any_ticker: 0
+
+# Signal Settings
+signal:
+  expiration_minutes: 15
+  max_pending_signals: 100
+
+# Market Hours (JST)
+market_hours:
+  timezone: "Asia/Tokyo"
+  safe_trading_windows:
+    morning:
+      start: "09:30"
+      end: "11:20"
+    afternoon:
+      start: "13:00"
+      end: "14:30"
+  off_hours_action: "REJECT"  # QUEUE or REJECT
+
+# Logging
+logging:
+  level: INFO
+  format: json
+  file: ./data/logs/kabuto_{time:YYYY-MM-DD}.log
+  rotation: "1 day"
+  retention: "90 days"
+  compression: gz
+
+# Alerts
+alerts:
+  enabled: true
+  slack_webhook_url: null
+  email_recipients: []
+  email_smtp_host: null
+  email_smtp_port: 587
+  email_from: null
+
+# Heartbeat
+heartbeat:
+  timeout_seconds: 300  # 5 minutes
+  alert_enabled: true
