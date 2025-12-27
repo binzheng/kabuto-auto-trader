@@ -1,0 +1,37 @@
+# Kabuto Auto Trader - 分析環境用依存ライブラリ
+
+# データ処理
+pandas>=2.0.0
+numpy>=1.24.0
+openpyxl>=3.1.0          # Excel読み込み
+
+# 可視化
+matplotlib>=3.7.0
+seaborn>=0.12.0
+plotly>=5.14.0
+
+# 統計・機械学習
+scipy>=1.10.0
+scikit-learn>=1.2.0
+statsmodels>=0.14.0
+
+# Jupyter環境
+jupyter>=1.0.0
+notebook>=6.5.0
+ipywidgets>=8.0.0
+
+# データベース（Relay Server連携用）
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.0   # PostgreSQL（本番用）
+
+# バックテスト（オプション）
+# backtrader>=1.9.76     # バックテストライブラリ
+# ta-lib>=0.4.0          # テクニカル指標
+
+# レポート生成
+jinja2>=3.1.0
+fpdf>=1.7.2
+
+# その他
+python-dateutil>=2.8.0
+pytz>=2023.3
