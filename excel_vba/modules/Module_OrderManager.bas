@@ -1,13 +1,13 @@
 Attribute VB_Name = "Module_OrderManager"
 '
 ' Kabuto Auto Trader - Order Manager Module
-' æ³¨æ–‡ç®¡ç†ã¨ãƒã‚¸ã‚·ãƒ§ãƒ³ç®¡ç†
+' ’•¶ŠÇ—‚Æƒ|ƒWƒVƒ‡ƒ“ŠÇ—
 '
 
 Option Explicit
 
 ' ========================================
-' æ³¨æ–‡ã‚’å±¥æ­´ã«è¨˜éŒ²
+' ’•¶‚ğ—š—ğ‚É‹L˜^
 ' ========================================
 Function RecordOrder(signal As Object, rssOrderId As String, status As String) As String
     On Error GoTo ErrorHandler
@@ -18,7 +18,7 @@ Function RecordOrder(signal As Object, rssOrderId As String, status As String) A
     Dim lastRow As Long
     lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row + 1
 
-    ' å†…éƒ¨ç®¡ç†IDç”Ÿæˆ
+    ' “à•”ŠÇ—ID¶¬
     Dim internalId As String
     internalId = "ORD_" & Format(Now, "yyyymmdd_hhnnss") & "_" & Format(lastRow - 1, "000")
 
@@ -29,7 +29,7 @@ Function RecordOrder(signal As Object, rssOrderId As String, status As String) A
     ws.Cells(lastRow, 5).Value = signal("ticker")
     ws.Cells(lastRow, 6).Value = signal("quantity")
     ws.Cells(lastRow, 7).Value = "market"
-    ws.Cells(lastRow, 8).Value = ""  ' limit_price (æˆè¡Œãªã®ã§ç©ºç™½)
+    ws.Cells(lastRow, 8).Value = ""  ' limit_price (¬s‚È‚Ì‚Å‹ó”’)
     ws.Cells(lastRow, 9).Value = rssOrderId
     ws.Cells(lastRow, 10).Value = status
 
@@ -45,7 +45,7 @@ ErrorHandler:
 End Function
 
 ' ========================================
-' æ³¨æ–‡çŠ¶æ…‹ã‚’æ›´æ–°
+' ’•¶ó‘Ô‚ğXV
 ' ========================================
 Sub UpdateOrderStatus(internalId As String, status As String, Optional filledPrice As Double = 0, Optional filledQty As Long = 0, Optional commission As Double = 0)
     On Error GoTo ErrorHandler
@@ -60,13 +60,13 @@ Sub UpdateOrderStatus(internalId As String, status As String, Optional filledPri
         Dim rowNum As Long
         rowNum = foundCell.Row
 
-        ws.Cells(rowNum, 10).Value = status  ' Jåˆ—: status
+        ws.Cells(rowNum, 10).Value = status  ' J—ñ: status
 
         If filledPrice > 0 Then
-            ws.Cells(rowNum, 11).Value = filledPrice     ' Kåˆ—: filled_price
-            ws.Cells(rowNum, 12).Value = filledQty       ' Låˆ—: filled_quantity
-            ws.Cells(rowNum, 13).Value = commission      ' Måˆ—: commission
-            ws.Cells(rowNum, 14).Value = Now             ' Nåˆ—: execution_time
+            ws.Cells(rowNum, 11).Value = filledPrice     ' K—ñ: filled_price
+            ws.Cells(rowNum, 12).Value = filledQty       ' L—ñ: filled_quantity
+            ws.Cells(rowNum, 13).Value = commission      ' M—ñ: commission
+            ws.Cells(rowNum, 14).Value = Now             ' N—ñ: execution_time
         End If
 
         Debug.Print "Order status updated: " & internalId & " -> " & status
@@ -79,7 +79,7 @@ ErrorHandler:
 End Sub
 
 ' ========================================
-' ç´„å®šã‚’ ExecutionLog ã«è¨˜éŒ²
+' –ñ’è‚ğ ExecutionLog ‚É‹L˜^
 ' ========================================
 Sub RecordExecution(orderInternalId As String)
     On Error GoTo ErrorHandler
@@ -90,7 +90,7 @@ Sub RecordExecution(orderInternalId As String)
     Set wsOrder = ThisWorkbook.Sheets("OrderHistory")
     Set wsExec = ThisWorkbook.Sheets("ExecutionLog")
 
-    ' OrderHistoryã‹ã‚‰è©²å½“è¡Œæ¤œç´¢
+    ' OrderHistory‚©‚çŠY“–sŒŸõ
     Dim foundCell As Range
     Set foundCell = wsOrder.Columns(1).Find(orderInternalId, LookIn:=xlValues)
 
@@ -99,7 +99,7 @@ Sub RecordExecution(orderInternalId As String)
     Dim orderRow As Long
     orderRow = foundCell.Row
 
-    ' ç´„å®šãƒ‡ãƒ¼ã‚¿å–å¾—
+    ' –ñ’èƒf[ƒ^æ“¾
     Dim action As String
     Dim ticker As String
     Dim quantity As Long
@@ -116,7 +116,7 @@ Sub RecordExecution(orderInternalId As String)
     execTime = wsOrder.Cells(orderRow, 14).Value
     signalId = wsOrder.Cells(orderRow, 3).Value
 
-    ' ExecutionLogã«è¿½åŠ 
+    ' ExecutionLog‚É’Ç‰Á
     Dim lastRow As Long
     lastRow = wsExec.Cells(wsExec.Rows.Count, 1).End(xlUp).Row + 1
 
@@ -132,7 +132,7 @@ Sub RecordExecution(orderInternalId As String)
     wsExec.Cells(lastRow, 7).Value = price
     wsExec.Cells(lastRow, 8).Value = commission
 
-    ' ç´„å®šä»£é‡‘è¨ˆç®—
+    ' –ñ’è‘ã‹àŒvZ
     Dim totalAmount As Double
     If action = "buy" Then
         totalAmount = price * quantity + commission
@@ -141,7 +141,7 @@ Sub RecordExecution(orderInternalId As String)
         totalAmount = price * quantity - commission
         wsExec.Cells(lastRow, 10).Value = "close"
 
-        ' å®Ÿç¾æç›Šè¨ˆç®—
+        ' ÀŒ»‘¹‰vŒvZ
         Dim pnl As Double
         pnl = CalculateRealizedPnL(ticker, quantity, price, commission)
         wsExec.Cells(lastRow, 11).Value = pnl  ' realized_pnl
@@ -149,10 +149,10 @@ Sub RecordExecution(orderInternalId As String)
 
     wsExec.Cells(lastRow, 9).Value = totalAmount
 
-    ' ãƒã‚¸ã‚·ãƒ§ãƒ³ç®¡ç†ã‚’æ›´æ–°
+    ' ƒ|ƒWƒVƒ‡ƒ“ŠÇ—‚ğXV
     Call UpdatePosition(ticker, action, quantity, price)
 
-    ' ã‚µãƒ¼ãƒãƒ¼ã«åŸ·è¡Œå ±å‘Š
+    ' ƒT[ƒo[‚É·s•ñ
     Dim rssOrderId As String
     rssOrderId = wsOrder.Cells(orderRow, 9).Value
     Call ReportExecution(signalId, rssOrderId, price, quantity)
@@ -166,7 +166,7 @@ ErrorHandler:
 End Sub
 
 ' ========================================
-' ãƒã‚¸ã‚·ãƒ§ãƒ³æ›´æ–°
+' ƒ|ƒWƒVƒ‡ƒ“XV
 ' ========================================
 Sub UpdatePosition(ticker As String, action As String, quantity As Long, price As Double)
     On Error GoTo ErrorHandler
@@ -179,7 +179,7 @@ Sub UpdatePosition(ticker As String, action As String, quantity As Long, price A
 
     If action = "buy" Then
         If foundCell Is Nothing Then
-            ' æ–°è¦ãƒã‚¸ã‚·ãƒ§ãƒ³
+            ' V‹Kƒ|ƒWƒVƒ‡ƒ“
             Dim lastRow As Long
             lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row + 1
 
@@ -187,10 +187,10 @@ Sub UpdatePosition(ticker As String, action As String, quantity As Long, price A
             ws.Cells(lastRow, 2).Value = GetTickerName(ticker)
             ws.Cells(lastRow, 3).Value = quantity
             ws.Cells(lastRow, 4).Value = price
-            ws.Cells(lastRow, 5).Value = price  ' current_price (åˆæœŸå€¤)
+            ws.Cells(lastRow, 5).Value = price  ' current_price (‰Šú’l)
             ws.Cells(lastRow, 11).Value = Date  ' entry_date
         Else
-            ' æ—¢å­˜ãƒã‚¸ã‚·ãƒ§ãƒ³ã«è¿½åŠ 
+            ' Šù‘¶ƒ|ƒWƒVƒ‡ƒ“‚É’Ç‰Á
             Dim posRow As Long
             posRow = foundCell.Row
 
@@ -200,7 +200,7 @@ Sub UpdatePosition(ticker As String, action As String, quantity As Long, price A
             currentQty = ws.Cells(posRow, 3).Value
             currentAvgCost = ws.Cells(posRow, 4).Value
 
-            ' å¹³å‡å–å¾—å˜ä¾¡å†è¨ˆç®—
+            ' •½‹Ïæ“¾’P‰¿ÄŒvZ
             Dim newAvgCost As Double
             newAvgCost = ((currentAvgCost * currentQty) + (price * quantity)) / (currentQty + quantity)
 
@@ -216,10 +216,10 @@ Sub UpdatePosition(ticker As String, action As String, quantity As Long, price A
             currentQty = ws.Cells(posRow, 3).Value
 
             If currentQty <= quantity Then
-                ' å…¨æ±ºæ¸ˆ â†’ è¡Œå‰Šé™¤
+                ' ‘SŒˆÏ ¨ síœ
                 ws.Rows(posRow).Delete
             Else
-                ' ä¸€éƒ¨æ±ºæ¸ˆ â†’ æ•°é‡æ¸›å°‘
+                ' ˆê•”ŒˆÏ ¨ ”—ÊŒ¸­
                 ws.Cells(posRow, 3).Value = currentQty - quantity
             End If
         End If
@@ -234,7 +234,7 @@ ErrorHandler:
 End Sub
 
 ' ========================================
-' ç¾åœ¨ä¾¡æ ¼ã‚’æ›´æ–°
+' Œ»İ‰¿Ši‚ğXV
 ' ========================================
 Sub UpdateCurrentPrices()
     On Error Resume Next
@@ -252,7 +252,7 @@ Sub UpdateCurrentPrices()
             currentPrice = GetCurrentPrice(ticker)
 
             If currentPrice > 0 Then
-                ws.Cells(i, 5).Value = currentPrice  ' Eåˆ—: current_price
+                ws.Cells(i, 5).Value = currentPrice  ' E—ñ: current_price
             End If
         End If
     Next i
@@ -261,7 +261,7 @@ Sub UpdateCurrentPrices()
 End Sub
 
 ' ========================================
-' å®Ÿç¾æç›Šè¨ˆç®—
+' ÀŒ»‘¹‰vŒvZ
 ' ========================================
 Function CalculateRealizedPnL(ticker As String, sellQty As Long, sellPrice As Double, commission As Double) As Double
     On Error Resume Next
@@ -269,7 +269,7 @@ Function CalculateRealizedPnL(ticker As String, sellQty As Long, sellPrice As Do
     Dim ws As Worksheet
     Set ws = ThisWorkbook.Sheets("PositionManager")
 
-    ' è©²å½“éŠ˜æŸ„ã®å¹³å‡å–å¾—å˜ä¾¡ã‚’å–å¾—
+    ' ŠY“––Á•¿‚Ì•½‹Ïæ“¾’P‰¿‚ğæ“¾
     Dim foundCell As Range
     Set foundCell = ws.Columns(1).Find(ticker, LookIn:=xlValues)
 
@@ -279,8 +279,8 @@ Function CalculateRealizedPnL(ticker As String, sellQty As Long, sellPrice As Do
     End If
 
     Dim avgCost As Double
-    avgCost = ws.Cells(foundCell.Row, 4).Value  ' Dåˆ—: avg_cost
+    avgCost = ws.Cells(foundCell.Row, 4).Value  ' D—ñ: avg_cost
 
-    ' æç›Š = (å£²å´ä¾¡æ ¼ - å¹³å‡å–å¾—å˜ä¾¡) Ã— æ•°é‡ - æ‰‹æ•°æ–™
+    ' ‘¹‰v = (”„‹p‰¿Ši - •½‹Ïæ“¾’P‰¿) ~ ”—Ê - è”—¿
     CalculateRealizedPnL = (sellPrice - avgCost) * sellQty - commission
 End Function

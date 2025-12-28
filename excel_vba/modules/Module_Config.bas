@@ -1,14 +1,14 @@
 Attribute VB_Name = "Module_Config"
 '
 ' Kabuto Auto Trader - Config Module
-' è¨­å®šç®¡ç†ã¨ãƒ¦ãƒ¼ãƒ†ã‚£ãƒªãƒ†ã‚£é–¢æ•°
+' İ’èŠÇ—‚Æƒ†[ƒeƒBƒŠƒeƒBŠÖ”
 '
 
 Option Explicit
 
 ' ========================================
-' è¨­å®šå€¤å–å¾—
-' Configã‚·ãƒ¼ãƒˆã‹ã‚‰è¨­å®šã‚’èª­ã¿è¾¼ã¿
+' İ’è’læ“¾
+' ConfigƒV[ƒg‚©‚çİ’è‚ğ“Ç‚İ‚İ
 ' ========================================
 Function GetConfig(key As String) As String
     On Error Resume Next
@@ -27,8 +27,8 @@ Function GetConfig(key As String) As String
 End Function
 
 ' ========================================
-' ã‚·ã‚¹ãƒ†ãƒ çŠ¶æ…‹å–å¾—
-' SystemStateã‚·ãƒ¼ãƒˆã‹ã‚‰çŠ¶æ…‹ã‚’èª­ã¿è¾¼ã¿
+' ƒVƒXƒeƒ€ó‘Ôæ“¾
+' SystemStateƒV[ƒg‚©‚çó‘Ô‚ğ“Ç‚İ‚İ
 ' ========================================
 Function GetSystemState(key As String) As Variant
     On Error Resume Next
@@ -67,8 +67,8 @@ Function GetSystemState(key As String) As Variant
 End Function
 
 ' ========================================
-' ã‚·ã‚¹ãƒ†ãƒ çŠ¶æ…‹è¨­å®š
-' SystemStateã‚·ãƒ¼ãƒˆã«çŠ¶æ…‹ã‚’æ›¸ãè¾¼ã¿
+' ƒVƒXƒeƒ€ó‘Ôİ’è
+' SystemStateƒV[ƒg‚Éó‘Ô‚ğ‘‚«‚İ
 ' ========================================
 Sub SetSystemState(key As String, value As Variant)
     On Error Resume Next
@@ -105,7 +105,7 @@ Sub SetSystemState(key As String, value As Variant)
 End Sub
 
 ' ========================================
-' å¸‚å ´å–¶æ¥­æ—¥ãƒã‚§ãƒƒã‚¯
+' sê‰c‹Æ“úƒ`ƒFƒbƒN
 ' ========================================
 Function IsTradingDay(targetDate As Date) As Boolean
     On Error Resume Next
@@ -117,9 +117,9 @@ Function IsTradingDay(targetDate As Date) As Boolean
     Set foundCell = ws.Columns(1).Find(targetDate, LookIn:=xlValues, LookAt:=xlWhole)
 
     If Not foundCell Is Nothing Then
-        IsTradingDay = ws.Cells(foundCell.Row, 3).Value  ' Cåˆ—: is_trading_day
+        IsTradingDay = ws.Cells(foundCell.Row, 3).Value  ' C—ñ: is_trading_day
     Else
-        ' ãƒ‡ãƒ¼ã‚¿ãŒãªã„å ´åˆã¯å¹³æ—¥ã‚’å–å¼•æ—¥ã¨ã¿ãªã™
+        ' ƒf[ƒ^‚ª‚È‚¢ê‡‚Í•½“ú‚ğæˆø“ú‚Æ‚İ‚È‚·
         Dim dayOfWeek As Integer
         dayOfWeek = Weekday(targetDate)
         IsTradingDay = (dayOfWeek <> vbSaturday And dayOfWeek <> vbSunday)
@@ -127,12 +127,12 @@ Function IsTradingDay(targetDate As Date) As Boolean
 End Function
 
 ' ========================================
-' å¸‚å ´ã‚ªãƒ¼ãƒ—ãƒ³ãƒã‚§ãƒƒã‚¯
+' sêƒI[ƒvƒ“ƒ`ƒFƒbƒN
 ' ========================================
 Function IsMarketOpen() As Boolean
     On Error Resume Next
 
-    ' å–å¼•æ—¥ãƒã‚§ãƒƒã‚¯
+    ' æˆø“úƒ`ƒFƒbƒN
     If Not IsTradingDay(Date) Then
         IsMarketOpen = False
         Exit Function
@@ -141,13 +141,13 @@ Function IsMarketOpen() As Boolean
     Dim currentTime As Date
     currentTime = Time
 
-    ' å‰å ´: 9:00-11:30
+    ' ‘Oê: 9:00-11:30
     If currentTime >= TimeValue("09:00:00") And currentTime <= TimeValue("11:30:00") Then
         IsMarketOpen = True
         Exit Function
     End If
 
-    ' å¾Œå ´: 12:30-15:00
+    ' Œãê: 12:30-15:00
     If currentTime >= TimeValue("12:30:00") And currentTime <= TimeValue("15:00:00") Then
         IsMarketOpen = True
         Exit Function
@@ -157,7 +157,7 @@ Function IsMarketOpen() As Boolean
 End Function
 
 ' ========================================
-' å®‰å…¨å–å¼•æ™‚é–“ãƒã‚§ãƒƒã‚¯
+' ˆÀ‘SæˆøŠÔƒ`ƒFƒbƒN
 ' ========================================
 Function IsSafeTradingWindow() As Boolean
     On Error Resume Next
@@ -170,13 +170,13 @@ Function IsSafeTradingWindow() As Boolean
     Dim currentTime As Date
     currentTime = Time
 
-    ' å‰å ´å®‰å…¨æ™‚é–“: 9:30-11:20
+    ' ‘OêˆÀ‘SŠÔ: 9:30-11:20
     If currentTime >= TimeValue("09:30:00") And currentTime <= TimeValue("11:20:00") Then
         IsSafeTradingWindow = True
         Exit Function
     End If
 
-    ' å¾Œå ´å®‰å…¨æ™‚é–“: 13:00-14:30
+    ' ŒãêˆÀ‘SŠÔ: 13:00-14:30
     If currentTime >= TimeValue("13:00:00") And currentTime <= TimeValue("14:30:00") Then
         IsSafeTradingWindow = True
         Exit Function
@@ -186,7 +186,7 @@ Function IsSafeTradingWindow() As Boolean
 End Function
 
 ' ========================================
-' ãƒ–ãƒ©ãƒƒã‚¯ãƒªã‚¹ãƒˆãƒã‚§ãƒƒã‚¯
+' ƒuƒ‰ƒbƒNƒŠƒXƒgƒ`ƒFƒbƒN
 ' ========================================
 Function IsTickerBlacklisted(ticker As String) As Boolean
     On Error Resume Next
@@ -202,29 +202,29 @@ Function IsTickerBlacklisted(ticker As String) As Boolean
         Exit Function
     End If
 
-    ' æœ‰åŠ¹æœŸé™ãƒã‚§ãƒƒã‚¯
+    ' —LŒøŠúŒÀƒ`ƒFƒbƒN
     Dim expiryDate As Variant
-    expiryDate = ws.Cells(foundCell.Row, 5).Value  ' Eåˆ—: expiry_date
+    expiryDate = ws.Cells(foundCell.Row, 5).Value  ' E—ñ: expiry_date
 
     If IsEmpty(expiryDate) Then
-        ' æ°¸ä¹…ãƒ–ãƒ©ãƒƒã‚¯ãƒªã‚¹ãƒˆ
+        ' ‰i‹vƒuƒ‰ƒbƒNƒŠƒXƒg
         IsTickerBlacklisted = True
     ElseIf expiryDate >= Date Then
-        ' æœ‰åŠ¹æœŸé™å†…
+        ' —LŒøŠúŒÀ“à
         IsTickerBlacklisted = True
     Else
-        ' æœ‰åŠ¹æœŸé™åˆ‡ã‚Œ
+        ' —LŒøŠúŒÀØ‚ê
         IsTickerBlacklisted = False
     End If
 End Function
 
 ' ========================================
-' ãƒ–ãƒ©ãƒƒã‚¯ãƒªã‚¹ãƒˆè¿½åŠ 
+' ƒuƒ‰ƒbƒNƒŠƒXƒg’Ç‰Á
 ' ========================================
 Sub AddToBlacklist(ticker As String, reason As String, Optional expiryDays As Integer = 0)
     On Error Resume Next
 
-    ' é‡è¤‡ãƒã‚§ãƒƒã‚¯
+    ' d•¡ƒ`ƒFƒbƒN
     If IsTickerBlacklisted(ticker) Then Exit Sub
 
     Dim ws As Worksheet
@@ -248,12 +248,12 @@ Sub AddToBlacklist(ticker As String, reason As String, Optional expiryDays As In
 End Sub
 
 ' ========================================
-' ã‚¯ãƒ¼ãƒ«ãƒ€ã‚¦ãƒ³æœŸé–“ãƒã‚§ãƒƒã‚¯
+' ƒN[ƒ‹ƒ_ƒEƒ“ŠúŠÔƒ`ƒFƒbƒN
 ' ========================================
 Function IsInCooldownPeriod(ticker As String, action As String) As Boolean
     '
-    ' ã‚¯ãƒ¼ãƒ«ãƒ€ã‚¦ãƒ³æœŸé–“ä¸­ã‹ãƒã‚§ãƒƒã‚¯
-    ' è²·ã„: 30åˆ†ã€å£²ã‚Š: 15åˆ†
+    ' ƒN[ƒ‹ƒ_ƒEƒ“ŠúŠÔ’†‚©ƒ`ƒFƒbƒN
+    ' ”ƒ‚¢: 30•ªA”„‚è: 15•ª
     '
     On Error Resume Next
 
@@ -263,28 +263,28 @@ Function IsInCooldownPeriod(ticker As String, action As String) As Boolean
     Dim lastRow As Long
     lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
 
-    ' æœ€æ–°ã®æ³¨æ–‡ã‚’æ¤œç´¢ï¼ˆé€†é †ã§ãƒ«ãƒ¼ãƒ—ï¼‰
+    ' ÅV‚Ì’•¶‚ğŒŸõi‹t‡‚Åƒ‹[ƒvj
     Dim i As Long
     For i = lastRow To 2 Step -1
         Dim orderTicker As String
         Dim orderAction As String
         Dim orderTime As Date
 
-        orderTicker = ws.Cells(i, 4).Value  ' Dåˆ—: ticker
-        orderAction = ws.Cells(i, 5).Value  ' Eåˆ—: action
-        orderTime = ws.Cells(i, 2).Value    ' Båˆ—: order_time
+        orderTicker = ws.Cells(i, 4).Value  ' D—ñ: ticker
+        orderAction = ws.Cells(i, 5).Value  ' E—ñ: action
+        orderTime = ws.Cells(i, 2).Value    ' B—ñ: order_time
 
-        ' åŒä¸€éŠ˜æŸ„ãƒ»åŒä¸€ã‚¢ã‚¯ã‚·ãƒ§ãƒ³ã®æ³¨æ–‡ã‚’æ¤œç´¢
+        ' “¯ˆê–Á•¿E“¯ˆêƒAƒNƒVƒ‡ƒ“‚Ì’•¶‚ğŒŸõ
         If orderTicker = ticker And orderAction = action Then
-            ' ã‚¯ãƒ¼ãƒ«ãƒ€ã‚¦ãƒ³æœŸé–“ã‚’è¨­å®š
+            ' ƒN[ƒ‹ƒ_ƒEƒ“ŠúŠÔ‚ğİ’è
             Dim cooldownMinutes As Long
             If action = "buy" Then
-                cooldownMinutes = 30  ' è²·ã„: 30åˆ†
+                cooldownMinutes = 30  ' ”ƒ‚¢: 30•ª
             Else
-                cooldownMinutes = 15  ' å£²ã‚Š: 15åˆ†
+                cooldownMinutes = 15  ' ”„‚è: 15•ª
             End If
 
-            ' çµŒéæ™‚é–“ã‚’è¨ˆç®—
+            ' Œo‰ßŠÔ‚ğŒvZ
             Dim elapsedMinutes As Long
             elapsedMinutes = DateDiff("n", orderTime, Now)
 
@@ -300,18 +300,18 @@ Function IsInCooldownPeriod(ticker As String, action As String) As Boolean
         End If
     Next i
 
-    ' è©²å½“ã™ã‚‹æ³¨æ–‡ãŒè¦‹ã¤ã‹ã‚‰ãªã„å ´åˆã¯ã‚¯ãƒ¼ãƒ«ãƒ€ã‚¦ãƒ³ãªã—
+    ' ŠY“–‚·‚é’•¶‚ªŒ©‚Â‚©‚ç‚È‚¢ê‡‚ÍƒN[ƒ‹ƒ_ƒEƒ“‚È‚µ
     IsInCooldownPeriod = False
 End Function
 
 ' ========================================
-' å¸‚å ´ã‚»ãƒƒã‚·ãƒ§ãƒ³çŠ¶æ…‹å–å¾—
+' sêƒZƒbƒVƒ‡ƒ“ó‘Ôæ“¾
 ' ========================================
 Function GetMarketSession() As String
     '
-    ' ç¾åœ¨ã®å¸‚å ´ã‚»ãƒƒã‚·ãƒ§ãƒ³çŠ¶æ…‹ã‚’å–å¾—
+    ' Œ»İ‚ÌsêƒZƒbƒVƒ‡ƒ“ó‘Ô‚ğæ“¾
     '
-    ' æˆ»ã‚Šå€¤:
+    ' –ß‚è’l:
     ' "pre-market"       - 8:00-9:00
     ' "morning-auction"  - 9:00-9:30
     ' "morning-trading"  - 9:30-11:30
@@ -319,11 +319,11 @@ Function GetMarketSession() As String
     ' "afternoon-auction" - 12:30-13:00
     ' "afternoon-trading" - 13:00-15:00
     ' "post-market"      - 15:00-18:00
-    ' "closed"           - ãã®ä»–
+    ' "closed"           - ‚»‚Ì‘¼
     '
     On Error Resume Next
 
-    ' å–¶æ¥­æ—¥ãƒã‚§ãƒƒã‚¯
+    ' ‰c‹Æ“úƒ`ƒFƒbƒN
     If Not IsTradingDay(Date) Then
         GetMarketSession = "closed"
         Exit Function
@@ -332,7 +332,7 @@ Function GetMarketSession() As String
     Dim currentTime As Date
     currentTime = Time
 
-    ' ã‚»ãƒƒã‚·ãƒ§ãƒ³åˆ¤å®š
+    ' ƒZƒbƒVƒ‡ƒ“”»’è
     If currentTime < TimeValue("08:00:00") Then
         GetMarketSession = "closed"
     ElseIf currentTime >= TimeValue("08:00:00") And currentTime < TimeValue("09:00:00") Then

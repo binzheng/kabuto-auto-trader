@@ -1,13 +1,13 @@
 Attribute VB_Name = "Module_API"
 '
 ' Kabuto Auto Trader - API Module
-' ã‚µãƒ¼ãƒãƒ¼APIé€šä¿¡
+' ƒT[ƒo[API’ÊM
 '
 
 Option Explicit
 
 ' ========================================
-' æœªå‡¦ç†ã‚·ã‚°ãƒŠãƒ«å–å¾—
+' –¢ˆ—ƒVƒOƒiƒ‹æ“¾
 ' GET /api/signals/pending
 ' ========================================
 Function FetchPendingSignals() As Collection
@@ -27,11 +27,11 @@ Function FetchPendingSignals() As Collection
     Set FetchPendingSignals = New Collection
 
     If http.Status = 204 Then
-        ' No Content - ã‚·ã‚°ãƒŠãƒ«ãªã—
+        ' No Content - ƒVƒOƒiƒ‹‚È‚µ
         Debug.Print "No pending signals"
         Exit Function
     ElseIf http.Status = 200 Then
-        ' JSONè§£æï¼ˆJsonConverterãƒ©ã‚¤ãƒ–ãƒ©ãƒªä½¿ç”¨ï¼‰
+        ' JSON‰ğÍiJsonConverterƒ‰ƒCƒuƒ‰ƒŠg—pj
         Dim response As Object
         Set response = JsonConverter.ParseJson(http.responseText)
 
@@ -57,7 +57,7 @@ ErrorHandler:
 End Function
 
 ' ========================================
-' ã‚·ã‚°ãƒŠãƒ«å–å¾—ç¢ºèª
+' ƒVƒOƒiƒ‹æ“¾Šm”F
 ' POST /api/signals/{signal_id}/ack
 ' ========================================
 Function AcknowledgeSignal(signalId As String, checksum As String) As Boolean
@@ -95,7 +95,7 @@ ErrorHandler:
 End Function
 
 ' ========================================
-' åŸ·è¡Œå®Œäº†å ±å‘Š
+' ·sŠ®—¹•ñ
 ' POST /api/signals/{signal_id}/executed
 ' ========================================
 Sub ReportExecution(signalId As String, orderId As String, price As Double, quantity As Long)
@@ -136,7 +136,7 @@ ErrorHandler:
 End Sub
 
 ' ========================================
-' åŸ·è¡Œå¤±æ•—å ±å‘Š
+' ·s¸”s•ñ
 ' POST /api/signals/{signal_id}/failed
 ' ========================================
 Sub ReportFailure(signalId As String, errorMessage As String)
@@ -172,7 +172,7 @@ ErrorHandler:
 End Sub
 
 ' ========================================
-' ãƒãƒ¼ãƒˆãƒ“ãƒ¼ãƒˆé€ä¿¡
+' ƒn[ƒgƒr[ƒg‘—M
 ' POST /api/heartbeat
 ' ========================================
 Sub SendHeartbeat()
@@ -182,7 +182,7 @@ Sub SendHeartbeat()
     Set http = CreateObject("MSXML2.XMLHTTP.6.0")
 
     Dim url As String
-    url = GetConfig("API_BASE_URL") & "/../heartbeat"  ' /api/heartbeat ã§ã¯ãªã /heartbeat
+    url = GetConfig("API_BASE_URL") & "/../heartbeat"  ' /api/heartbeat ‚Å‚Í‚È‚­ /heartbeat
 
     Dim payload As String
     payload = "{" & _
@@ -205,11 +205,11 @@ Sub SendHeartbeat()
 
 ErrorHandler:
     Debug.Print "Error in SendHeartbeat: " & Err.Description
-    ' ãƒãƒ¼ãƒˆãƒ“ãƒ¼ãƒˆã‚¨ãƒ©ãƒ¼ã¯ãƒ­ã‚°ã«è¨˜éŒ²ã—ãªã„ï¼ˆé »ç¹ã™ãã‚‹ãŸã‚ï¼‰
+    ' ƒn[ƒgƒr[ƒgƒGƒ‰[‚ÍƒƒO‚É‹L˜^‚µ‚È‚¢i•p”É‚·‚¬‚é‚½‚ßj
 End Sub
 
 ' ========================================
-' APIæ¥ç¶šãƒã‚§ãƒƒã‚¯
+' APIÚ‘±ƒ`ƒFƒbƒN
 ' GET /health
 ' ========================================
 Function CheckAPIConnection() As Boolean
@@ -224,7 +224,7 @@ Function CheckAPIConnection() As Boolean
     http.Open "GET", url, False
     http.setRequestHeader "Content-Type", "application/json"
 
-    ' ã‚¿ã‚¤ãƒ ã‚¢ã‚¦ãƒˆè¨­å®šï¼ˆ5ç§’ï¼‰
+    ' ƒ^ƒCƒ€ƒAƒEƒgİ’èi5•bj
     http.send
 
     If http.Status = 200 Then

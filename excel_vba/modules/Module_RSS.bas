@@ -1,31 +1,31 @@
 Attribute VB_Name = "Module_RSS"
 '
 ' Kabuto Auto Trader - RSS Module (Complete Safety Edition)
-' MarketSpeed II RSSé€£æº + 6å±¤é˜²å¾¡æ©Ÿæ§‹
+' MarketSpeed II RSS˜AŒg + 6‘w–hŒä‹@\
 '
-' è¨­è¨ˆ: doc/14_rss_order_safety_design.md
+' İŒv: doc/14_rss_order_safety_design.md
 '
 
 Option Explicit
 
 ' ========================================
-' å®‰å…¨ç™ºæ³¨å®Ÿè¡Œï¼ˆãƒ¡ã‚¤ãƒ³ã‚¨ãƒ³ãƒˆãƒªãƒ¼ãƒã‚¤ãƒ³ãƒˆï¼‰
+' ˆÀ‘S”­’ÀsiƒƒCƒ“ƒGƒ“ƒgƒŠ[ƒ|ƒCƒ“ƒgj
 ' ========================================
 Function SafeExecuteOrder(signal As Dictionary) As String
     '
-    ' å®‰å…¨ç™ºæ³¨å®Ÿè¡Œï¼ˆèª¤ç™ºæ³¨é˜²æ­¢å®Œå…¨ç‰ˆï¼‰
+    ' ˆÀ‘S”­’ÀsiŒë”­’–h~Š®‘S”Åj
     '
     On Error GoTo ErrorHandler
 
     Dim orderParams As New Dictionary
 
-    ' === Step 1: ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿æ§‹ç¯‰ ===
+    ' === Step 1: ƒpƒ‰ƒ[ƒ^\’z ===
     orderParams("ticker") = signal("ticker")
     orderParams("side") = IIf(signal("action") = "buy", 1, 2)
     orderParams("quantity") = CLng(signal("quantity"))
-    orderParams("priceType") = 0  ' æˆè¡Œå›ºå®š
-    orderParams("price") = 0      ' æˆè¡Œãªã®ã§0
-    orderParams("condition") = 0  ' é€šå¸¸æ³¨æ–‡
+    orderParams("priceType") = 0  ' ¬sŒÅ’è
+    orderParams("price") = 0      ' ¬s‚È‚Ì‚Å0
+    orderParams("condition") = 0  ' ’Êí’•¶
 
     Debug.Print "=== Safe Order Execution ==="
     Debug.Print "Signal ID: " & signal("signal_id")
@@ -33,14 +33,14 @@ Function SafeExecuteOrder(signal As Dictionary) As String
     Debug.Print "Action: " & signal("action")
     Debug.Print "Quantity: " & orderParams("quantity")
 
-    ' === Step 2: ç™ºæ³¨å¯å¦åˆ¤å®šï¼ˆ5æ®µéšãƒã‚§ãƒƒã‚¯ï¼‰ ===
+    ' === Step 2: ”­’‰Â”Û”»’èi5’iŠKƒ`ƒFƒbƒNj ===
     Dim canExecute As Dictionary
     Set canExecute = CanExecuteOrder(orderParams)
 
     If Not canExecute("allowed") Then
         Debug.Print "Order BLOCKED: " & canExecute("reason")
 
-        ' ãƒ–ãƒ­ãƒƒã‚¯ç†ç”±ã‚’ãƒ­ã‚°è¨˜éŒ²
+        ' ƒuƒƒbƒN——R‚ğƒƒO‹L˜^
         Call LogOrderBlocked(signal("signal_id"), canExecute)
 
         SafeExecuteOrder = ""
@@ -49,7 +49,7 @@ Function SafeExecuteOrder(signal As Dictionary) As String
 
     Debug.Print "Order checks passed (5 levels)"
 
-    ' === Step 3: ãƒ€ãƒ–ãƒ«ãƒã‚§ãƒƒã‚¯ï¼ˆç•°å¸¸ä¾¡æ ¼æ¤œå‡ºï¼‰ ===
+    ' === Step 3: ƒ_ƒuƒ‹ƒ`ƒFƒbƒNiˆÙí‰¿ŠiŒŸoj ===
     If Not DoubleCheckOrder(orderParams) Then
         Debug.Print "Double check FAILED"
         Call LogError("ORDER_ERROR", "SafeExecuteOrder", "Double check failed", orderParams("ticker"), "CRITICAL")
@@ -60,10 +60,10 @@ Function SafeExecuteOrder(signal As Dictionary) As String
 
     Debug.Print "Double check passed"
 
-    ' === Step 4: ç›£æŸ»ãƒ­ã‚°è¨˜éŒ²ï¼ˆç™ºæ³¨å‰ï¼‰ ===
+    ' === Step 4: ŠÄ¸ƒƒO‹L˜^i”­’‘Oj ===
     Call LogOrderAttempt(signal("signal_id"), orderParams)
 
-    ' === Step 5: RSS.ORDER() å®Ÿè¡Œ ===
+    ' === Step 5: RSS.ORDER() Às ===
     Dim rssResult As Variant
     rssResult = Application.Run("RSS.ORDER", _
         orderParams("ticker"), _
@@ -74,7 +74,7 @@ Function SafeExecuteOrder(signal As Dictionary) As String
         orderParams("condition") _
     )
 
-    ' === Step 6: çµæœåˆ¤å®š ===
+    ' === Step 6: Œ‹‰Ê”»’è ===
     If IsError(rssResult) Then
         Debug.Print "RSS.ORDER returned Error"
         Call LogError("RSS_ERROR", "SafeExecuteOrder", "RSS.ORDER returned error", orderParams("ticker"), "CRITICAL")
@@ -86,18 +86,18 @@ Function SafeExecuteOrder(signal As Dictionary) As String
     Dim resultStr As String
     resultStr = CStr(rssResult)
 
-    If InStr(resultStr, "æ³¨æ–‡ç•ªå·:") > 0 Then
-        ' æˆåŠŸ
+    If InStr(resultStr, "’•¶”Ô†:") > 0 Then
+        ' ¬Œ÷
         Dim orderId As String
         orderId = Mid(resultStr, InStr(resultStr, ":") + 1)
 
         Debug.Print "Order SUCCESS: " & orderId
 
-        ' ç›£æŸ»ãƒ­ã‚°è¨˜éŒ²ï¼ˆæˆåŠŸï¼‰
+        ' ŠÄ¸ƒƒO‹L˜^i¬Œ÷j
         Call LogOrderSuccess(signal("signal_id"), orderParams, orderId)
 
-        ' ã‚«ã‚¦ãƒ³ã‚¿ãƒ¼æ›´æ–°
-        If orderParams("side") = 1 Then  ' è²·ã„
+        ' ƒJƒEƒ“ƒ^[XV
+        If orderParams("side") = 1 Then  ' ”ƒ‚¢
             Dim currentCount As Long
             currentCount = CLng(GetSystemState("daily_entry_count"))
             Call SetSystemState("daily_entry_count", currentCount + 1)
@@ -105,7 +105,7 @@ Function SafeExecuteOrder(signal As Dictionary) As String
 
         SafeExecuteOrder = orderId
     Else
-        ' RSSå´ã‚¨ãƒ©ãƒ¼
+        ' RSS‘¤ƒGƒ‰[
         Debug.Print "RSS.ORDER failed: " & resultStr
         Call LogError("RSS_ERROR", "SafeExecuteOrder", resultStr, orderParams("ticker"), "ERROR")
 
@@ -122,18 +122,18 @@ ErrorHandler:
 End Function
 
 ' ========================================
-' ãƒ¬ãƒ™ãƒ«2: ç™ºæ³¨å¯å¦åˆ¤å®šï¼ˆ5æ®µéšãƒã‚§ãƒƒã‚¯ï¼‰
+' ƒŒƒxƒ‹2: ”­’‰Â”Û”»’èi5’iŠKƒ`ƒFƒbƒNj
 ' ========================================
 Function CanExecuteOrder(orderParams As Dictionary) As Dictionary
     '
-    ' ç™ºæ³¨å¯å¦ã‚’å¤šå±¤ãƒã‚§ãƒƒã‚¯
+    ' ”­’‰Â”Û‚ğ‘½‘wƒ`ƒFƒbƒN
     '
     Dim result As New Dictionary
     result("allowed") = False
     result("reason") = ""
     result("checks") = New Dictionary
 
-    ' === Level 1: Kill Switch ãƒã‚§ãƒƒã‚¯ ===
+    ' === Level 1: Kill Switch ƒ`ƒFƒbƒN ===
     If Not IsSystemEnabled() Then
         result("reason") = "kill_switch_active"
         result("checks")("kill_switch") = "BLOCKED"
@@ -142,7 +142,7 @@ Function CanExecuteOrder(orderParams As Dictionary) As Dictionary
     End If
     result("checks")("kill_switch") = "OK"
 
-    ' === Level 2: å¸‚å ´æ™‚é–“ãƒã‚§ãƒƒã‚¯ ===
+    ' === Level 2: sêŠÔƒ`ƒFƒbƒN ===
     If Not IsSafeTradingWindow() Then
         result("reason") = "outside_trading_hours"
         result("checks")("market_hours") = "BLOCKED"
@@ -151,7 +151,7 @@ Function CanExecuteOrder(orderParams As Dictionary) As Dictionary
     End If
     result("checks")("market_hours") = "OK"
 
-    ' === Level 3: ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿æ¤œè¨¼ ===
+    ' === Level 3: ƒpƒ‰ƒ[ƒ^ŒŸØ ===
     Dim paramValidation As Dictionary
     Set paramValidation = ValidateOrderParameters(orderParams)
 
@@ -164,7 +164,7 @@ Function CanExecuteOrder(orderParams As Dictionary) As Dictionary
     End If
     result("checks")("parameters") = "OK"
 
-    ' === Level 4: æ—¥æ¬¡åˆ¶é™ãƒã‚§ãƒƒã‚¯ ===
+    ' === Level 4: “úŸ§ŒÀƒ`ƒFƒbƒN ===
     If Not CheckDailyLimits(orderParams("side")) Then
         result("reason") = "daily_limit_exceeded"
         result("checks")("daily_limits") = "BLOCKED"
@@ -173,8 +173,8 @@ Function CanExecuteOrder(orderParams As Dictionary) As Dictionary
     End If
     result("checks")("daily_limits") = "OK"
 
-    ' === Level 5: ãƒªã‚¹ã‚¯åˆ¶é™ãƒã‚§ãƒƒã‚¯ ===
-    If orderParams("side") = 1 Then  ' è²·ã„ã®å ´åˆ
+    ' === Level 5: ƒŠƒXƒN§ŒÀƒ`ƒFƒbƒN ===
+    If orderParams("side") = 1 Then  ' ”ƒ‚¢‚Ìê‡
         Dim riskCheck As Dictionary
         Set riskCheck = CheckRiskLimits(orderParams("ticker"), orderParams("quantity"))
 
@@ -187,24 +187,24 @@ Function CanExecuteOrder(orderParams As Dictionary) As Dictionary
     End If
     result("checks")("risk_limits") = "OK"
 
-    ' === å…¨ãƒã‚§ãƒƒã‚¯é€šé ===
+    ' === ‘Sƒ`ƒFƒbƒN’Ê‰ß ===
     result("allowed") = True
     result("reason") = "all_checks_passed"
     Set CanExecuteOrder = result
 End Function
 
 ' ========================================
-' ãƒ¬ãƒ™ãƒ«3: çµ±åˆãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿æ¤œè¨¼
+' ƒŒƒxƒ‹3: “‡ƒpƒ‰ƒ[ƒ^ŒŸØ
 ' ========================================
 Function ValidateOrderParameters(orderParams As Dictionary) As Dictionary
     '
-    ' å…¨ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ã‚’çµ±åˆæ¤œè¨¼
+    ' ‘Sƒpƒ‰ƒ[ƒ^‚ğ“‡ŒŸØ
     '
     Dim result As New Dictionary
     result("valid") = True
     Set result("errors") = New Collection
 
-    ' 1. éŠ˜æŸ„ã‚³ãƒ¼ãƒ‰æ¤œè¨¼
+    ' 1. –Á•¿ƒR[ƒhŒŸØ
     Dim tickerResult As Dictionary
     Set tickerResult = ValidateTicker(orderParams("ticker"))
     If Not tickerResult("valid") Then
@@ -215,7 +215,7 @@ Function ValidateOrderParameters(orderParams As Dictionary) As Dictionary
         Next err
     End If
 
-    ' 2. å£²è²·åŒºåˆ†æ¤œè¨¼
+    ' 2. ”„”ƒ‹æ•ªŒŸØ
     Dim sideResult As Dictionary
     Set sideResult = ValidateSide(orderParams("side"), orderParams("ticker"))
     If Not sideResult("valid") Then
@@ -225,7 +225,7 @@ Function ValidateOrderParameters(orderParams As Dictionary) As Dictionary
         Next err
     End If
 
-    ' 3. æ•°é‡æ¤œè¨¼
+    ' 3. ”—ÊŒŸØ
     Dim qtyResult As Dictionary
     Set qtyResult = ValidateQuantity(orderParams("quantity"), orderParams("ticker"), orderParams("side"))
     If Not qtyResult("valid") Then
@@ -235,7 +235,7 @@ Function ValidateOrderParameters(orderParams As Dictionary) As Dictionary
         Next err
     End If
 
-    ' 4. ä¾¡æ ¼ç¨®åˆ¥æ¤œè¨¼
+    ' 4. ‰¿Šií•ÊŒŸØ
     Dim priceTypeResult As Dictionary
     Set priceTypeResult = ValidatePriceType(orderParams("priceType"))
     If Not priceTypeResult("valid") Then
@@ -245,7 +245,7 @@ Function ValidateOrderParameters(orderParams As Dictionary) As Dictionary
         Next err
     End If
 
-    ' 5. ä¾¡æ ¼æ¤œè¨¼
+    ' 5. ‰¿ŠiŒŸØ
     Dim priceResult As Dictionary
     Set priceResult = ValidatePrice(orderParams("price"), orderParams("priceType"))
     If Not priceResult("valid") Then
@@ -255,7 +255,7 @@ Function ValidateOrderParameters(orderParams As Dictionary) As Dictionary
         Next err
     End If
 
-    ' 6. åŸ·è¡Œæ¡ä»¶æ¤œè¨¼
+    ' 6. ·sğŒŒŸØ
     Dim conditionResult As Dictionary
     Set conditionResult = ValidateCondition(orderParams("condition"))
     If Not conditionResult("valid") Then
@@ -269,35 +269,35 @@ Function ValidateOrderParameters(orderParams As Dictionary) As Dictionary
 End Function
 
 ' ========================================
-' ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿æ¤œè¨¼: éŠ˜æŸ„ã‚³ãƒ¼ãƒ‰
+' ƒpƒ‰ƒ[ƒ^ŒŸØ: –Á•¿ƒR[ƒh
 ' ========================================
 Function ValidateTicker(ticker As String) As Dictionary
     Dim result As New Dictionary
     result("valid") = False
     Set result("errors") = New Collection
 
-    ' 1. å¿…é ˆãƒã‚§ãƒƒã‚¯
+    ' 1. •K{ƒ`ƒFƒbƒN
     If ticker = "" Then
-        result("errors").Add "éŠ˜æŸ„ã‚³ãƒ¼ãƒ‰ãŒç©ºã§ã™"
+        result("errors").Add "–Á•¿ƒR[ƒh‚ª‹ó‚Å‚·"
         Set ValidateTicker = result
         Exit Function
     End If
 
-    ' 2. é•·ã•ãƒã‚§ãƒƒã‚¯
+    ' 2. ’·‚³ƒ`ƒFƒbƒN
     If Len(ticker) <> 4 Then
-        result("errors").Add "éŠ˜æŸ„ã‚³ãƒ¼ãƒ‰ã¯4æ¡ã§ã‚ã‚‹å¿…è¦ãŒã‚ã‚Šã¾ã™: " & ticker
+        result("errors").Add "–Á•¿ƒR[ƒh‚Í4Œ…‚Å‚ ‚é•K—v‚ª‚ ‚è‚Ü‚·: " & ticker
         Set ValidateTicker = result
         Exit Function
     End If
 
-    ' 3. æ•°å­—ãƒã‚§ãƒƒã‚¯
+    ' 3. ”šƒ`ƒFƒbƒN
     If Not IsNumeric(ticker) Then
-        result("errors").Add "éŠ˜æŸ„ã‚³ãƒ¼ãƒ‰ã¯æ•°å­—ã®ã¿: " & ticker
+        result("errors").Add "–Á•¿ƒR[ƒh‚Í”š‚Ì‚İ: " & ticker
         Set ValidateTicker = result
         Exit Function
     End If
 
-    ' 4. ãƒ›ãƒ¯ã‚¤ãƒˆãƒªã‚¹ãƒˆãƒã‚§ãƒƒã‚¯ï¼ˆæ¨å¥¨éŠ˜æŸ„ã®ã¿è¨±å¯ï¼‰
+    ' 4. ƒzƒƒCƒgƒŠƒXƒgƒ`ƒFƒbƒNi„§–Á•¿‚Ì‚İ‹–‰Âj
     Dim allowedTickers As Collection
     Set allowedTickers = GetAllowedTickers()
 
@@ -312,14 +312,14 @@ Function ValidateTicker(ticker As String) As Dictionary
     Next t
 
     If Not found Then
-        result("errors").Add "è¨±å¯ã•ã‚Œã¦ã„ãªã„éŠ˜æŸ„: " & ticker
+        result("errors").Add "‹–‰Â‚³‚ê‚Ä‚¢‚È‚¢–Á•¿: " & ticker
         Set ValidateTicker = result
         Exit Function
     End If
 
-    ' 5. ãƒ–ãƒ©ãƒƒã‚¯ãƒªã‚¹ãƒˆãƒã‚§ãƒƒã‚¯
+    ' 5. ƒuƒ‰ƒbƒNƒŠƒXƒgƒ`ƒFƒbƒN
     If IsTickerBlacklisted(ticker) Then
-        result("errors").Add "ãƒ–ãƒ©ãƒƒã‚¯ãƒªã‚¹ãƒˆéŠ˜æŸ„: " & ticker
+        result("errors").Add "ƒuƒ‰ƒbƒNƒŠƒXƒg–Á•¿: " & ticker
         Set ValidateTicker = result
         Exit Function
     End If
@@ -329,34 +329,34 @@ Function ValidateTicker(ticker As String) As Dictionary
 End Function
 
 ' ========================================
-' ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿æ¤œè¨¼: å£²è²·åŒºåˆ†
+' ƒpƒ‰ƒ[ƒ^ŒŸØ: ”„”ƒ‹æ•ª
 ' ========================================
 Function ValidateSide(side As Integer, ticker As String) As Dictionary
     Dim result As New Dictionary
     result("valid") = False
     Set result("errors") = New Collection
 
-    ' 1. å€¤ç¯„å›²ãƒã‚§ãƒƒã‚¯
+    ' 1. ’l”ÍˆÍƒ`ƒFƒbƒN
     If side <> 1 And side <> 2 Then
-        result("errors").Add "å£²è²·åŒºåˆ†ã¯1ï¼ˆè²·ï¼‰ã¾ãŸã¯2ï¼ˆå£²ï¼‰ã®ã¿: " & side
+        result("errors").Add "”„”ƒ‹æ•ª‚Í1i”ƒj‚Ü‚½‚Í2i”„j‚Ì‚İ: " & side
         Set ValidateSide = result
         Exit Function
     End If
 
-    ' 2. å£²ã‚Šã®å ´åˆã¯ãƒã‚¸ã‚·ãƒ§ãƒ³ç¢ºèª
-    If side = 2 Then  ' å£²ã‚Š
+    ' 2. ”„‚è‚Ìê‡‚Íƒ|ƒWƒVƒ‡ƒ“Šm”F
+    If side = 2 Then  ' ”„‚è
         If Not HasPosition(ticker) Then
-            result("errors").Add "ãƒã‚¸ã‚·ãƒ§ãƒ³ãªã—ã§å£²ã‚Šæ³¨æ–‡: " & ticker
+            result("errors").Add "ƒ|ƒWƒVƒ‡ƒ“‚È‚µ‚Å”„‚è’•¶: " & ticker
             Set ValidateSide = result
             Exit Function
         End If
 
-        ' å£²å´å¯èƒ½æ•°é‡ãƒã‚§ãƒƒã‚¯
+        ' ”„‹p‰Â”\”—Êƒ`ƒFƒbƒN
         Dim availableQty As Long
         availableQty = GetAvailableQuantity(ticker)
 
         If availableQty <= 0 Then
-            result("errors").Add "å£²å´å¯èƒ½æ•°é‡ãªã—: " & ticker
+            result("errors").Add "”„‹p‰Â”\”—Ê‚È‚µ: " & ticker
             Set ValidateSide = result
             Exit Function
         End If
@@ -367,62 +367,62 @@ Function ValidateSide(side As Integer, ticker As String) As Dictionary
 End Function
 
 ' ========================================
-' ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿æ¤œè¨¼: æ•°é‡
+' ƒpƒ‰ƒ[ƒ^ŒŸØ: ”—Ê
 ' ========================================
 Function ValidateQuantity(quantity As Long, ticker As String, side As Integer) As Dictionary
     Dim result As New Dictionary
     result("valid") = False
     Set result("errors") = New Collection
 
-    ' 1. ç¯„å›²ãƒã‚§ãƒƒã‚¯
+    ' 1. ”ÍˆÍƒ`ƒFƒbƒN
     If quantity <= 0 Then
-        result("errors").Add "æ•°é‡ã¯æ­£ã®å€¤ã§ã‚ã‚‹å¿…è¦ãŒã‚ã‚Šã¾ã™: " & quantity
+        result("errors").Add "”—Ê‚Í³‚Ì’l‚Å‚ ‚é•K—v‚ª‚ ‚è‚Ü‚·: " & quantity
         Set ValidateQuantity = result
         Exit Function
     End If
 
-    ' 2. å˜å…ƒæ ªãƒã‚§ãƒƒã‚¯ï¼ˆ100æ ªå˜ä½ï¼‰
+    ' 2. ’PŒ³Š”ƒ`ƒFƒbƒNi100Š”’PˆÊj
     If quantity Mod 100 <> 0 Then
-        result("errors").Add "æ•°é‡ã¯100æ ªå˜ä½ã§ã‚ã‚‹å¿…è¦ãŒã‚ã‚Šã¾ã™: " & quantity
+        result("errors").Add "”—Ê‚Í100Š”’PˆÊ‚Å‚ ‚é•K—v‚ª‚ ‚è‚Ü‚·: " & quantity
         Set ValidateQuantity = result
         Exit Function
     End If
 
-    ' 3. æœ€å°/æœ€å¤§ãƒã‚§ãƒƒã‚¯
+    ' 3. Å¬/Å‘åƒ`ƒFƒbƒN
     Dim minQty As Long: minQty = 100
-    Dim maxQty As Long: maxQty = 10000  ' 1æ³¨æ–‡ã‚ãŸã‚Šæœ€å¤§10,000æ ª
+    Dim maxQty As Long: maxQty = 10000  ' 1’•¶‚ ‚½‚èÅ‘å10,000Š”
 
     If quantity < minQty Then
-        result("errors").Add "æ•°é‡ãŒæœ€å°å€¤æœªæº€: " & quantity & " < " & minQty
+        result("errors").Add "”—Ê‚ªÅ¬’l–¢–: " & quantity & " < " & minQty
         Set ValidateQuantity = result
         Exit Function
     End If
 
     If quantity > maxQty Then
-        result("errors").Add "æ•°é‡ãŒæœ€å¤§å€¤è¶…é: " & quantity & " > " & maxQty
+        result("errors").Add "”—Ê‚ªÅ‘å’l’´‰ß: " & quantity & " > " & maxQty
         Set ValidateQuantity = result
         Exit Function
     End If
 
-    ' 4. å£²ã‚Šã®å ´åˆã¯ä¿æœ‰æ•°é‡ãƒã‚§ãƒƒã‚¯
-    If side = 2 Then  ' å£²ã‚Š
+    ' 4. ”„‚è‚Ìê‡‚Í•Û—L”—Êƒ`ƒFƒbƒN
+    If side = 2 Then  ' ”„‚è
         Dim availableQty As Long
         availableQty = GetAvailableQuantity(ticker)
 
         If quantity > availableQty Then
-            result("errors").Add "å£²å´æ•°é‡ãŒä¿æœ‰æ•°é‡è¶…é: " & quantity & " > " & availableQty
+            result("errors").Add "”„‹p”—Ê‚ª•Û—L”—Ê’´‰ß: " & quantity & " > " & availableQty
             Set ValidateQuantity = result
             Exit Function
         End If
     End If
 
-    ' 5. é‡‘é¡ä¸Šé™ãƒã‚§ãƒƒã‚¯ï¼ˆè²·ã„ã®å ´åˆï¼‰
-    If side = 1 Then  ' è²·ã„
+    ' 5. ‹àŠzãŒÀƒ`ƒFƒbƒNi”ƒ‚¢‚Ìê‡j
+    If side = 1 Then  ' ”ƒ‚¢
         Dim currentPrice As Double
         currentPrice = GetCurrentPrice(ticker)
 
         If currentPrice = 0 Then
-            result("errors").Add "ç¾åœ¨ä¾¡æ ¼å–å¾—å¤±æ•—: " & ticker
+            result("errors").Add "Œ»İ‰¿Šiæ“¾¸”s: " & ticker
             Set ValidateQuantity = result
             Exit Function
         End If
@@ -434,7 +434,7 @@ Function ValidateQuantity(quantity As Long, ticker As String, side As Integer) A
         maxOrderValue = CLng(GetConfig("MAX_POSITION_PER_TICKER"))
 
         If orderValue > maxOrderValue Then
-            result("errors").Add "æ³¨æ–‡é‡‘é¡ãŒä¸Šé™è¶…é: " & Format(orderValue, "#,##0") & " > " & Format(maxOrderValue, "#,##0")
+            result("errors").Add "’•¶‹àŠz‚ªãŒÀ’´‰ß: " & Format(orderValue, "#,##0") & " > " & Format(maxOrderValue, "#,##0")
             Set ValidateQuantity = result
             Exit Function
         End If
@@ -445,16 +445,16 @@ Function ValidateQuantity(quantity As Long, ticker As String, side As Integer) A
 End Function
 
 ' ========================================
-' ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿æ¤œè¨¼: ä¾¡æ ¼ç¨®åˆ¥
+' ƒpƒ‰ƒ[ƒ^ŒŸØ: ‰¿Šií•Ê
 ' ========================================
 Function ValidatePriceType(priceType As Integer) As Dictionary
     Dim result As New Dictionary
     result("valid") = False
     Set result("errors") = New Collection
 
-    ' å…¨è‡ªå‹•å£²è²·ã§ã¯æˆè¡Œï¼ˆ0ï¼‰ã®ã¿è¨±å¯
+    ' ‘S©“®”„”ƒ‚Å‚Í¬si0j‚Ì‚İ‹–‰Â
     If priceType <> 0 Then
-        result("errors").Add "å…¨è‡ªå‹•å£²è²·ã§ã¯æˆè¡Œæ³¨æ–‡ï¼ˆ0ï¼‰ã®ã¿è¨±å¯: " & priceType
+        result("errors").Add "‘S©“®”„”ƒ‚Å‚Í¬s’•¶i0j‚Ì‚İ‹–‰Â: " & priceType
         Set ValidatePriceType = result
         Exit Function
     End If
@@ -464,24 +464,24 @@ Function ValidatePriceType(priceType As Integer) As Dictionary
 End Function
 
 ' ========================================
-' ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿æ¤œè¨¼: ä¾¡æ ¼
+' ƒpƒ‰ƒ[ƒ^ŒŸØ: ‰¿Ši
 ' ========================================
 Function ValidatePrice(price As Double, priceType As Integer) As Dictionary
     Dim result As New Dictionary
     result("valid") = False
     Set result("errors") = New Collection
 
-    ' æˆè¡Œã®å ´åˆã¯0
+    ' ¬s‚Ìê‡‚Í0
     If priceType = 0 Then
         If price <> 0 Then
-            result("errors").Add "æˆè¡Œæ³¨æ–‡ã®ä¾¡æ ¼ã¯0ã§ã‚ã‚‹å¿…è¦ãŒã‚ã‚Šã¾ã™: " & price
+            result("errors").Add "¬s’•¶‚Ì‰¿Ši‚Í0‚Å‚ ‚é•K—v‚ª‚ ‚è‚Ü‚·: " & price
             Set ValidatePrice = result
             Exit Function
         End If
     Else
-        ' æŒ‡å€¤ã®å ´åˆï¼ˆå…¨è‡ªå‹•ã§ã¯ä½¿ç”¨ã—ãªã„ãŒå¿µã®ãŸã‚ï¼‰
+        ' w’l‚Ìê‡i‘S©“®‚Å‚Íg—p‚µ‚È‚¢‚ª”O‚Ì‚½‚ßj
         If price <= 0 Then
-            result("errors").Add "æŒ‡å€¤ä¾¡æ ¼ã¯æ­£ã®å€¤ã§ã‚ã‚‹å¿…è¦ãŒã‚ã‚Šã¾ã™: " & price
+            result("errors").Add "w’l‰¿Ši‚Í³‚Ì’l‚Å‚ ‚é•K—v‚ª‚ ‚è‚Ü‚·: " & price
             Set ValidatePrice = result
             Exit Function
         End If
@@ -492,16 +492,16 @@ Function ValidatePrice(price As Double, priceType As Integer) As Dictionary
 End Function
 
 ' ========================================
-' ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿æ¤œè¨¼: åŸ·è¡Œæ¡ä»¶
+' ƒpƒ‰ƒ[ƒ^ŒŸØ: ·sğŒ
 ' ========================================
 Function ValidateCondition(condition As Integer) As Dictionary
     Dim result As New Dictionary
     result("valid") = False
     Set result("errors") = New Collection
 
-    ' å…¨è‡ªå‹•å£²è²·ã§ã¯é€šå¸¸æ³¨æ–‡ï¼ˆ0ï¼‰ã®ã¿è¨±å¯
+    ' ‘S©“®”„”ƒ‚Å‚Í’Êí’•¶i0j‚Ì‚İ‹–‰Â
     If condition <> 0 Then
-        result("errors").Add "å…¨è‡ªå‹•å£²è²·ã§ã¯é€šå¸¸æ³¨æ–‡ï¼ˆ0ï¼‰ã®ã¿è¨±å¯: " & condition
+        result("errors").Add "‘S©“®”„”ƒ‚Å‚Í’Êí’•¶i0j‚Ì‚İ‹–‰Â: " & condition
         Set ValidateCondition = result
         Exit Function
     End If
@@ -511,7 +511,7 @@ Function ValidateCondition(condition As Integer) As Dictionary
 End Function
 
 ' ========================================
-' ãƒªã‚¹ã‚¯åˆ¶é™ãƒã‚§ãƒƒã‚¯
+' ƒŠƒXƒN§ŒÀƒ`ƒFƒbƒN
 ' ========================================
 Function CheckRiskLimits(ticker As String, quantity As Long) As Dictionary
     Dim result As New Dictionary
@@ -531,7 +531,7 @@ Function CheckRiskLimits(ticker As String, quantity As Long) As Dictionary
     Dim orderValue As Double
     orderValue = currentPrice * quantity
 
-    ' 1. ç·ãƒã‚¸ã‚·ãƒ§ãƒ³ä¸Šé™ãƒã‚§ãƒƒã‚¯
+    ' 1. ‘ƒ|ƒWƒVƒ‡ƒ“ãŒÀƒ`ƒFƒbƒN
     Dim totalPositionValue As Double
     totalPositionValue = CDbl(GetSystemState("total_position_value"))
 
@@ -545,7 +545,7 @@ Function CheckRiskLimits(ticker As String, quantity As Long) As Dictionary
         Exit Function
     End If
 
-    ' 2. 1éŠ˜æŸ„ã‚ãŸã‚Šä¸Šé™ãƒã‚§ãƒƒã‚¯
+    ' 2. 1–Á•¿‚ ‚½‚èãŒÀƒ`ƒFƒbƒN
     Dim currentTickerValue As Double
     currentTickerValue = GetPositionValue(ticker)
 
@@ -559,7 +559,7 @@ Function CheckRiskLimits(ticker As String, quantity As Long) As Dictionary
         Exit Function
     End If
 
-    ' 3. æœ€å¤§ãƒã‚¸ã‚·ãƒ§ãƒ³æ•°ãƒã‚§ãƒƒã‚¯
+    ' 3. Å‘åƒ|ƒWƒVƒ‡ƒ“”ƒ`ƒFƒbƒN
     Dim currentPositions As Long
     currentPositions = CountOpenPositions()
 
@@ -577,7 +577,7 @@ Function CheckRiskLimits(ticker As String, quantity As Long) As Dictionary
 End Function
 
 ' ========================================
-' æ—¥æ¬¡åˆ¶é™ãƒã‚§ãƒƒã‚¯
+' “úŸ§ŒÀƒ`ƒFƒbƒN
 ' ========================================
 Function CheckDailyLimits(side As Integer) As Boolean
     Dim dailyEntryCount As Long
@@ -586,7 +586,7 @@ Function CheckDailyLimits(side As Integer) As Boolean
     Dim maxDailyEntries As Long
     maxDailyEntries = CLng(GetConfig("MAX_DAILY_ENTRIES"))
 
-    If side = 1 Then  ' è²·ã„
+    If side = 1 Then  ' ”ƒ‚¢
         If dailyEntryCount >= maxDailyEntries Then
             Debug.Print "Daily entry limit exceeded: " & dailyEntryCount & " >= " & maxDailyEntries
             CheckDailyLimits = False
@@ -598,22 +598,22 @@ Function CheckDailyLimits(side As Integer) As Boolean
 End Function
 
 ' ========================================
-' ãƒ€ãƒ–ãƒ«ãƒã‚§ãƒƒã‚¯ï¼ˆæœ€çµ‚ç¢ºèªï¼‰
+' ƒ_ƒuƒ‹ƒ`ƒFƒbƒNiÅIŠm”Fj
 ' ========================================
 Function DoubleCheckOrder(orderParams As Dictionary) As Boolean
     '
-    ' ç™ºæ³¨ç›´å‰ã®æœ€çµ‚ç¢ºèª
+    ' ”­’’¼‘O‚ÌÅIŠm”F
     '
     Dim checkLog As String
     checkLog = "=== Double Check ===" & vbCrLf
 
-    ' 1. ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿å†ç¢ºèª
+    ' 1. ƒpƒ‰ƒ[ƒ^ÄŠm”F
     checkLog = checkLog & "Ticker: " & orderParams("ticker") & vbCrLf
     checkLog = checkLog & "Side: " & IIf(orderParams("side") = 1, "BUY", "SELL") & vbCrLf
     checkLog = checkLog & "Quantity: " & orderParams("quantity") & vbCrLf
     checkLog = checkLog & "Type: " & IIf(orderParams("priceType") = 0, "MARKET", "LIMIT") & vbCrLf
 
-    ' 2. ç¾åœ¨ä¾¡æ ¼å–å¾—
+    ' 2. Œ»İ‰¿Šiæ“¾
     Dim currentPrice As Double
     currentPrice = GetCurrentPrice(orderParams("ticker"))
     checkLog = checkLog & "Current Price: " & currentPrice & vbCrLf
@@ -624,29 +624,29 @@ Function DoubleCheckOrder(orderParams As Dictionary) As Boolean
         Exit Function
     End If
 
-    ' 3. æ³¨æ–‡é‡‘é¡è¨ˆç®—
+    ' 3. ’•¶‹àŠzŒvZ
     Dim orderValue As Double
     orderValue = currentPrice * orderParams("quantity")
     checkLog = checkLog & "Order Value: " & Format(orderValue, "#,##0") & vbCrLf
 
-    ' 4. ç•°å¸¸ä¾¡æ ¼ãƒã‚§ãƒƒã‚¯ï¼ˆå‰æ—¥çµ‚å€¤ã‹ã‚‰Â±30%ä»¥å†…ï¼‰
+    ' 4. ˆÙí‰¿Šiƒ`ƒFƒbƒNi‘O“úI’l‚©‚ç}30%ˆÈ“àj
     Dim refPrice As Double
-    refPrice = GetReferencePrice(orderParams("ticker"))  ' å‰æ—¥çµ‚å€¤
+    refPrice = GetReferencePrice(orderParams("ticker"))  ' ‘O“úI’l
 
     If refPrice > 0 Then
         Dim priceChange As Double
         priceChange = (currentPrice - refPrice) / refPrice
 
-        If Abs(priceChange) > 0.3 Then  ' Â±30%è¶…
+        If Abs(priceChange) > 0.3 Then  ' }30%’´
             checkLog = checkLog & "ALERT: Abnormal price change: " & Format(priceChange * 100, "0.0") & "%" & vbCrLf
             Debug.Print checkLog
-            DoubleCheckOrder = False  ' ç•°å¸¸ä¾¡æ ¼ã§ç™ºæ³¨ã—ãªã„
+            DoubleCheckOrder = False  ' ˆÙí‰¿Ši‚Å”­’‚µ‚È‚¢
             Exit Function
         End If
     End If
 
-    ' 5. å£²ã‚Šã®å ´åˆã¯ãƒã‚¸ã‚·ãƒ§ãƒ³å†ç¢ºèª
-    If orderParams("side") = 2 Then  ' å£²ã‚Š
+    ' 5. ”„‚è‚Ìê‡‚Íƒ|ƒWƒVƒ‡ƒ“ÄŠm”F
+    If orderParams("side") = 2 Then  ' ”„‚è
         Dim availableQty As Long
         availableQty = GetAvailableQuantity(orderParams("ticker"))
 
@@ -663,10 +663,10 @@ Function DoubleCheckOrder(orderParams As Dictionary) As Boolean
 End Function
 
 ' ========================================
-' ãƒ˜ãƒ«ãƒ‘ãƒ¼é–¢æ•°
+' ƒwƒ‹ƒp[ŠÖ”
 ' ========================================
 Function IsSystemEnabled() As Boolean
-    ' SystemStateã‚·ãƒ¼ãƒˆã®Kill SwitchçŠ¶æ…‹ã‚’ç¢ºèª
+    ' SystemStateƒV[ƒg‚ÌKill Switchó‘Ô‚ğŠm”F
     Dim status As String
     status = GetSystemState("system_status")
 
@@ -674,7 +674,7 @@ Function IsSystemEnabled() As Boolean
 End Function
 
 Function GetAllowedTickers() As Collection
-    ' æ¨å¥¨éŠ˜æŸ„ãƒªã‚¹ãƒˆï¼ˆTOPIX Core30ã‹ã‚‰é¸å®šï¼‰
+    ' „§–Á•¿ƒŠƒXƒgiTOPIX Core30‚©‚ç‘I’èj
     Dim tickers As New Collection
     tickers.Add "9984"  ' SoftBank Group
     tickers.Add "6758"  ' Sony Group
@@ -707,7 +707,7 @@ Function GetAvailableQuantity(ticker As String) As Long
     Set foundCell = ws.Columns(1).Find(ticker, LookIn:=xlValues)
 
     If Not foundCell Is Nothing Then
-        GetAvailableQuantity = ws.Cells(foundCell.Row, 3).Value  ' Cåˆ—: quantity
+        GetAvailableQuantity = ws.Cells(foundCell.Row, 3).Value  ' C—ñ: quantity
     Else
         GetAvailableQuantity = 0
     End If
@@ -723,8 +723,8 @@ Function GetPositionValue(ticker As String) As Double
     If Not foundCell Is Nothing Then
         Dim qty As Long
         Dim avgCost As Double
-        qty = ws.Cells(foundCell.Row, 3).Value      ' Cåˆ—: quantity
-        avgCost = ws.Cells(foundCell.Row, 4).Value  ' Dåˆ—: avg_cost
+        qty = ws.Cells(foundCell.Row, 3).Value      ' C—ñ: quantity
+        avgCost = ws.Cells(foundCell.Row, 4).Value  ' D—ñ: avg_cost
         GetPositionValue = qty * avgCost
     Else
         GetPositionValue = 0
@@ -738,7 +738,7 @@ Function CountOpenPositions() As Long
     Dim lastRow As Long
     lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
 
-    ' ãƒ˜ãƒƒãƒ€ãƒ¼ã‚’é™¤ããƒ‡ãƒ¼ã‚¿è¡Œæ•°
+    ' ƒwƒbƒ_[‚ğœ‚­ƒf[ƒ^s”
     If lastRow >= 2 Then
         CountOpenPositions = lastRow - 1
     Else
@@ -747,16 +747,16 @@ Function CountOpenPositions() As Long
 End Function
 
 ' ========================================
-' ç›£æŸ»ãƒ­ã‚°è¨˜éŒ²
+' ŠÄ¸ƒƒO‹L˜^
 ' ========================================
 Sub LogOrderAttempt(signalId As String, orderParams As Dictionary)
     '
-    ' ç™ºæ³¨è©¦è¡Œãƒ­ã‚°ï¼ˆå…¨ã¦ã®ç™ºæ³¨åˆ¤æ–­ã‚’è¨˜éŒ²ï¼‰
+    ' ”­’sƒƒOi‘S‚Ä‚Ì”­’”»’f‚ğ‹L˜^j
     '
     On Error Resume Next
 
     Dim ws As Worksheet
-    Set ws = ThisWorkbook.Sheets("ErrorLog")  ' OrderAuditLogã®ä»£ã‚ã‚Šã«ErrorLogã‚’ä½¿ç”¨
+    Set ws = ThisWorkbook.Sheets("ErrorLog")  ' OrderAuditLog‚Ì‘ã‚í‚è‚ÉErrorLog‚ğg—p
 
     Dim lastRow As Long
     lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row + 1
@@ -809,66 +809,66 @@ Sub LogOrderBlocked(signalId As String, blockResult As Dictionary)
 End Sub
 
 ' ========================================
-' ç·Šæ€¥åœæ­¢æ©Ÿæ§‹
+' ‹Ù‹}’â~‹@\
 ' ========================================
 Sub ActivateKillSwitch(reason As String)
     '
-    ' Kill Switchç™ºå‹•ï¼ˆå³åº§ã«å…¨ç™ºæ³¨åœæ­¢ï¼‰
+    ' Kill Switch”­“®i‘¦À‚É‘S”­’’â~j
     '
     Debug.Print "========================================="
     Debug.Print "KILL SWITCH ACTIVATED"
     Debug.Print "Reason: " & reason
     Debug.Print "========================================="
 
-    ' ã‚·ã‚¹ãƒ†ãƒ åœæ­¢
+    ' ƒVƒXƒeƒ€’â~
     Call SetSystemState("system_status", "Stopped")
 
-    ' è‡ªå‹•å£²è²·åœæ­¢
+    ' ©“®”„”ƒ’â~
     Call StopAutoTrading
 
-    ' ã‚¢ãƒ©ãƒ¼ãƒˆ
-    MsgBox "ã€ç·Šæ€¥åœæ­¢ã€‘" & vbCrLf & reason, vbCritical, "Kill Switch Activated"
+    ' ƒAƒ‰[ƒg
+    MsgBox "y‹Ù‹}’â~z" & vbCrLf & reason, vbCritical, "Kill Switch Activated"
 
-    ' ãƒ­ã‚°è¨˜éŒ²
+    ' ƒƒO‹L˜^
     Call LogError("KILL_SWITCH", "ActivateKillSwitch", reason, "", "CRITICAL")
 End Sub
 
 Sub CheckAutoKillSwitch()
     '
-    ' è‡ªå‹•Kill Switchãƒˆãƒªã‚¬ãƒ¼
+    ' ©“®Kill SwitchƒgƒŠƒK[
     '
     On Error Resume Next
 
-    ' 1. é€£ç¶šæå¤±ãƒã‚§ãƒƒã‚¯
+    ' 1. ˜A‘±‘¹¸ƒ`ƒFƒbƒN
     Dim consecutiveLosses As Long
     consecutiveLosses = CountConsecutiveLosses()
 
     If consecutiveLosses >= 5 Then
-        Call ActivateKillSwitch("5é€£ç¶šæå¤±")
+        Call ActivateKillSwitch("5˜A‘±‘¹¸")
         Exit Sub
     End If
 
-    ' 2. æ—¥æ¬¡æå¤±ãƒã‚§ãƒƒã‚¯
+    ' 2. “úŸ‘¹¸ƒ`ƒFƒbƒN
     Dim dailyPnL As Double
     dailyPnL = CalculateDailyPnL()
 
-    If dailyPnL <= -50000 Then  ' -5ä¸‡å††
-        Call ActivateKillSwitch("æ—¥æ¬¡æå¤±-5ä¸‡å††è¶…é")
+    If dailyPnL <= -50000 Then  ' -5–œ‰~
+        Call ActivateKillSwitch("“úŸ‘¹¸-5–œ‰~’´‰ß")
         Exit Sub
     End If
 
-    ' 3. ç•°å¸¸é »åº¦ãƒã‚§ãƒƒã‚¯
+    ' 3. ˆÙí•p“xƒ`ƒFƒbƒN
     Dim hourlyTrades As Long
     hourlyTrades = CountTradesLastHour()
 
     If hourlyTrades >= 10 Then
-        Call ActivateKillSwitch("ç•°å¸¸ãªå–å¼•é »åº¦ï¼ˆ1æ™‚é–“10å›ï¼‰")
+        Call ActivateKillSwitch("ˆÙí‚Èæˆø•p“xi1ŠÔ10‰ñj")
         Exit Sub
     End If
 End Sub
 
 Function CountConsecutiveLosses() As Long
-    ' ExecutionLogã‹ã‚‰é€£ç¶šæå¤±ã‚’ã‚«ã‚¦ãƒ³ãƒˆ
+    ' ExecutionLog‚©‚ç˜A‘±‘¹¸‚ğƒJƒEƒ“ƒg
     On Error Resume Next
     Dim ws As Worksheet
     Set ws = ThisWorkbook.Sheets("ExecutionLog")
@@ -882,12 +882,12 @@ Function CountConsecutiveLosses() As Long
     Dim i As Long
     For i = lastRow To 2 Step -1
         Dim pnl As Double
-        pnl = ws.Cells(i, 10).Value  ' Jåˆ—: realized_pnl
+        pnl = ws.Cells(i, 10).Value  ' J—ñ: realized_pnl
 
         If pnl < 0 Then
             consecutiveCount = consecutiveCount + 1
         Else
-            Exit For  ' æå¤±ãŒé€”åˆ‡ã‚ŒãŸ
+            Exit For  ' ‘¹¸‚ª“rØ‚ê‚½
         End If
     Next i
 
@@ -895,7 +895,7 @@ Function CountConsecutiveLosses() As Long
 End Function
 
 Function CalculateDailyPnL() As Double
-    ' æœ¬æ—¥ã®å®Ÿç¾æç›Šã‚’è¨ˆç®—
+    ' –{“ú‚ÌÀŒ»‘¹‰v‚ğŒvZ
     On Error Resume Next
     Dim ws As Worksheet
     Set ws = ThisWorkbook.Sheets("ExecutionLog")
@@ -909,10 +909,10 @@ Function CalculateDailyPnL() As Double
     Dim i As Long
     For i = 2 To lastRow
         Dim execDate As Date
-        execDate = ws.Cells(i, 2).Value  ' Båˆ—: execution_time
+        execDate = ws.Cells(i, 2).Value  ' B—ñ: execution_time
 
         If DateValue(execDate) = Date Then
-            totalPnL = totalPnL + ws.Cells(i, 10).Value  ' Jåˆ—: realized_pnl
+            totalPnL = totalPnL + ws.Cells(i, 10).Value  ' J—ñ: realized_pnl
         End If
     Next i
 
@@ -920,7 +920,7 @@ Function CalculateDailyPnL() As Double
 End Function
 
 Function CountTradesLastHour() As Long
-    ' ç›´è¿‘1æ™‚é–“ã®å–å¼•æ•°
+    ' ’¼‹ß1ŠÔ‚Ìæˆø”
     On Error Resume Next
     Dim ws As Worksheet
     Set ws = ThisWorkbook.Sheets("ExecutionLog")
@@ -948,7 +948,7 @@ Function CountTradesLastHour() As Long
 End Function
 
 ' ========================================
-' RSSé–¢æ•°å‘¼ã³å‡ºã—ï¼ˆæ—¢å­˜æ©Ÿèƒ½ï¼‰
+' RSSŠÖ”ŒÄ‚Ño‚µiŠù‘¶‹@”\j
 ' ========================================
 Function GetCurrentPrice(ticker As String) As Double
     On Error GoTo ErrorHandler
@@ -971,7 +971,7 @@ ErrorHandler:
 End Function
 
 Function GetReferencePrice(ticker As String) As Double
-    ' å‰æ—¥çµ‚å€¤ã‚’å–å¾—ï¼ˆRSS.PREV_CLOSEã¾ãŸã¯ã‚­ãƒ£ãƒƒã‚·ãƒ¥ï¼‰
+    ' ‘O“úI’l‚ğæ“¾iRSS.PREV_CLOSE‚Ü‚½‚ÍƒLƒƒƒbƒVƒ…j
     On Error Resume Next
     Dim refPrice As Variant
     refPrice = Application.Run("RSS.PREV_CLOSE", ticker)
@@ -990,7 +990,7 @@ Function GetTickerName(ticker As String) As String
     result = Application.Run("RSS.NAME", ticker)
 
     If IsError(result) Or result = "" Then
-        ' ãƒ•ã‚©ãƒ¼ãƒ«ãƒãƒƒã‚¯: é™çš„ãƒãƒƒãƒ”ãƒ³ã‚°
+        ' ƒtƒH[ƒ‹ƒoƒbƒN: Ã“Iƒ}ƒbƒsƒ“ƒO
         Select Case ticker
             Case "9984": GetTickerName = "SoftBank Group"
             Case "6758": GetTickerName = "Sony Group"
@@ -1018,7 +1018,7 @@ End Function
 Function CheckRSSConnection() As Boolean
     On Error GoTo ErrorHandler
 
-    ' ãƒ†ã‚¹ãƒˆç”¨ã«é©å½“ãªéŠ˜æŸ„ã‚³ãƒ¼ãƒ‰ã§ä¾¡æ ¼å–å¾—
+    ' ƒeƒXƒg—p‚É“K“–‚È–Á•¿ƒR[ƒh‚Å‰¿Šiæ“¾
     Dim testTicker As String
     testTicker = "9984"  ' SoftBank Group
 
@@ -1039,7 +1039,7 @@ ErrorHandler:
 End Function
 
 ' ========================================
-' æ³¨æ–‡çŠ¶æ…‹ãƒãƒ¼ãƒªãƒ³ã‚°ï¼ˆæ—¢å­˜æ©Ÿèƒ½ï¼‰
+' ’•¶ó‘Ôƒ|[ƒŠƒ“ƒOiŠù‘¶‹@”\j
 ' ========================================
 Sub PollOrderStatus(internalId As String)
     On Error GoTo ErrorHandler
@@ -1047,7 +1047,7 @@ Sub PollOrderStatus(internalId As String)
     Dim ws As Worksheet
     Set ws = ThisWorkbook.Sheets("OrderHistory")
 
-    ' OrderHistoryã‹ã‚‰è©²å½“è¡Œæ¤œç´¢
+    ' OrderHistory‚©‚çŠY“–sŒŸõ
     Dim foundCell As Range
     Set foundCell = ws.Columns(1).Find(internalId, LookIn:=xlValues, LookAt:=xlWhole)
 
@@ -1057,11 +1057,11 @@ Sub PollOrderStatus(internalId As String)
     orderRow = foundCell.Row
 
     Dim rssOrderId As String
-    rssOrderId = ws.Cells(orderRow, 9).Value  ' Iåˆ—: rss_order_id
+    rssOrderId = ws.Cells(orderRow, 9).Value  ' I—ñ: rss_order_id
 
     If rssOrderId = "" Then Exit Sub
 
-    ' RSS.STATUSé–¢æ•°ã§æ³¨æ–‡çŠ¶æ…‹ç…§ä¼š
+    ' RSS.STATUSŠÖ”‚Å’•¶ó‘ÔÆ‰ï
     Dim result As Variant
     result = Application.Run("RSS.STATUS", rssOrderId)
 
@@ -1073,9 +1073,9 @@ Sub PollOrderStatus(internalId As String)
     Dim resultStr As String
     resultStr = CStr(result)
 
-    ' resultå½¢å¼: "ç´„å®šæ¸ˆã¿|ä¾¡æ ¼:3001|æ•°é‡:100|æ‰‹æ•°æ–™:150"
-    If InStr(resultStr, "ç´„å®šæ¸ˆã¿") > 0 Then
-        ' ç´„å®šæ¸ˆã¿ - ãƒ‡ãƒ¼ã‚¿è§£æ
+    ' resultŒ`®: "–ñ’èÏ‚İ|‰¿Ši:3001|”—Ê:100|è”—¿:150"
+    If InStr(resultStr, "–ñ’èÏ‚İ") > 0 Then
+        ' –ñ’èÏ‚İ - ƒf[ƒ^‰ğÍ
         Dim parts() As String
         parts = Split(resultStr, "|")
 
@@ -1083,30 +1083,30 @@ Sub PollOrderStatus(internalId As String)
         Dim quantity As Long
         Dim commission As Double
 
-        ' ãƒ‡ãƒ¼ã‚¿æŠ½å‡º
+        ' ƒf[ƒ^’Šo
         Dim i As Integer
         For i = LBound(parts) To UBound(parts)
-            If InStr(parts(i), "ä¾¡æ ¼:") > 0 Then
+            If InStr(parts(i), "‰¿Ši:") > 0 Then
                 price = CDbl(Split(parts(i), ":")(1))
-            ElseIf InStr(parts(i), "æ•°é‡:") > 0 Then
+            ElseIf InStr(parts(i), "”—Ê:") > 0 Then
                 quantity = CLng(Split(parts(i), ":")(1))
-            ElseIf InStr(parts(i), "æ‰‹æ•°æ–™:") > 0 Then
+            ElseIf InStr(parts(i), "è”—¿:") > 0 Then
                 commission = CDbl(Split(parts(i), ":")(1))
             End If
         Next i
 
-        ' OrderHistoryæ›´æ–°
+        ' OrderHistoryXV
         Call UpdateOrderStatus(internalId, "filled", price, quantity, commission)
 
-        ' ExecutionLogè¨˜éŒ²
+        ' ExecutionLog‹L˜^
         Call RecordExecution(internalId)
 
         Debug.Print "Order filled: " & internalId & " at " & price
-    ElseIf InStr(resultStr, "å—ä»˜æ¸ˆã¿") > 0 Then
-        ' ã¾ã ç´„å®šã—ã¦ã„ãªã„
+    ElseIf InStr(resultStr, "ó•tÏ‚İ") > 0 Then
+        ' ‚Ü‚¾–ñ’è‚µ‚Ä‚¢‚È‚¢
         Debug.Print "Order pending: " & internalId
-    ElseIf InStr(resultStr, "å–æ¶ˆæ¸ˆã¿") > 0 Or InStr(resultStr, "æ‹’å¦") > 0 Then
-        ' å–æ¶ˆãƒ»æ‹’å¦
+    ElseIf InStr(resultStr, "æÁÏ‚İ") > 0 Or InStr(resultStr, "‹‘”Û") > 0 Then
+        ' æÁE‹‘”Û
         Call UpdateOrderStatus(internalId, "cancelled")
         Debug.Print "Order cancelled/rejected: " & internalId
     End If
@@ -1119,14 +1119,14 @@ ErrorHandler:
 End Sub
 
 ' ========================================
-' å¾Œæ–¹äº’æ›æ€§ï¼šExecuteOrderï¼ˆéæ¨å¥¨ï¼‰
+' Œã•ûŒİŠ·«FExecuteOrderi”ñ„§j
 ' ========================================
 Function ExecuteOrder(signal As Object) As String
     '
-    ' å¾Œæ–¹äº’æ›æ€§ã®ãŸã‚æ®‹ã™ãŒã€SafeExecuteOrderã‚’ä½¿ç”¨ã™ã‚‹ã“ã¨
+    ' Œã•ûŒİŠ·«‚Ì‚½‚ßc‚·‚ªASafeExecuteOrder‚ğg—p‚·‚é‚±‚Æ
     '
     Debug.Print "WARNING: ExecuteOrder is deprecated. Use SafeExecuteOrder instead."
 
-    ' SafeExecuteOrderã«è»¢é€
+    ' SafeExecuteOrder‚É“]‘—
     ExecuteOrder = SafeExecuteOrder(signal)
 End Function

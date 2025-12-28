@@ -1,18 +1,18 @@
 Attribute VB_Name = "Module_Notification"
 '
 ' Kabuto Auto Trader - Notification Module
-' ç•°å¸¸æ¤œçŸ¥ãƒ»é€šçŸ¥æ©Ÿèƒ½
+' ˆÙíŒŸ’mE’Ê’m‹@”\
 '
 
 Option Explicit
 
 ' ========================================
-' Slacké€šçŸ¥
+' Slack’Ê’m
 ' ========================================
 Sub SendSlackNotification(level As String, title As String, fields As Collection, Optional mentionChannel As Boolean = False)
     On Error Resume Next
 
-    ' Webhook URLå–å¾—
+    ' Webhook URLæ“¾
     Dim webhookUrl As String
     Select Case level
         Case "INFO"
@@ -32,17 +32,17 @@ Sub SendSlackNotification(level As String, title As String, fields As Collection
         Exit Sub
     End If
 
-    ' é€šçŸ¥é »åº¦åˆ¶é™ãƒã‚§ãƒƒã‚¯
+    ' ’Ê’m•p“x§ŒÀƒ`ƒFƒbƒN
     If Not ShouldSendNotification(level, title) Then
         Debug.Print "Slack: Notification suppressed (frequency limit): " & title
         Exit Sub
     End If
 
-    ' ãƒšã‚¤ãƒ­ãƒ¼ãƒ‰ä½œæˆ
+    ' ƒyƒCƒ[ƒhì¬
     Dim payload As String
     payload = BuildSlackPayload(level, title, fields, mentionChannel)
 
-    ' HTTP POSTé€ä¿¡
+    ' HTTP POST‘—M
     Dim http As Object
     Set http = CreateObject("MSXML2.XMLHTTP")
 
@@ -62,7 +62,7 @@ End Sub
 
 Function BuildSlackPayload(level As String, title As String, fields As Collection, mentionChannel As Boolean) As String
     '
-    ' Slackãƒšã‚¤ãƒ­ãƒ¼ãƒ‰ï¼ˆJSONï¼‰ã‚’æ§‹ç¯‰
+    ' SlackƒyƒCƒ[ƒhiJSONj‚ğ\’z
     '
     On Error Resume Next
 
@@ -74,22 +74,22 @@ Function BuildSlackPayload(level As String, title As String, fields As Collectio
         Case "INFO"
             color = "#36a64f"  ' Green
             icon = ":information_source:"
-            prefix = "â„¹ï¸"
+            prefix = "??"
         Case "WARNING"
             color = "warning"  ' Yellow
             icon = ":warning:"
-            prefix = "âš ï¸"
+            prefix = "??"
         Case "ERROR"
             color = "danger"   ' Red
             icon = ":x:"
-            prefix = "ğŸš¨"
+            prefix = "?"
         Case "CRITICAL"
             color = "#FF0000"  ' Bright Red
             icon = ":rotating_light:"
-            prefix = "ğŸš¨ğŸš¨ğŸš¨"
+            prefix = "???"
     End Select
 
-    ' JSONä½œæˆï¼ˆæ‰‹å‹•æ§‹ç¯‰ï¼‰
+    ' JSONì¬iè“®\’zj
     Dim json As String
     json = "{"
     json = json & """username"": ""Kabuto Auto Trader"","
@@ -104,7 +104,7 @@ Function BuildSlackPayload(level As String, title As String, fields As Collectio
     json = json & """title"": """ & prefix & " " & title & ""","
     json = json & """fields"": ["
 
-    ' ãƒ•ã‚£ãƒ¼ãƒ«ãƒ‰è¿½åŠ 
+    ' ƒtƒB[ƒ‹ƒh’Ç‰Á
     Dim i As Integer
     For i = 1 To fields.Count
         Dim field As Dictionary
@@ -131,7 +131,7 @@ End Function
 
 Function EscapeJSON(text As String) As String
     '
-    ' JSONæ–‡å­—åˆ—ã‚¨ã‚¹ã‚±ãƒ¼ãƒ—
+    ' JSON•¶š—ñƒGƒXƒP[ƒv
     '
     Dim result As String
     result = text
@@ -146,12 +146,12 @@ Function EscapeJSON(text As String) As String
 End Function
 
 ' ========================================
-' ãƒ¡ãƒ¼ãƒ«é€šçŸ¥
+' ƒ[ƒ‹’Ê’m
 ' ========================================
 Sub SendEmailNotification(level As String, title As String, fields As Collection)
     On Error Resume Next
 
-    ' ãƒ¡ãƒ¼ãƒ«è¨­å®šå–å¾—
+    ' ƒ[ƒ‹İ’èæ“¾
     Dim smtpServer As String
     Dim smtpPort As Integer
     Dim smtpUseTLS As Boolean
@@ -173,15 +173,15 @@ Sub SendEmailNotification(level As String, title As String, fields As Collection
         Exit Sub
     End If
 
-    ' ä»¶åä½œæˆ
+    ' Œ–¼ì¬
     Dim subject As String
     subject = "[Kabuto] " & UCase(level) & " - " & title
 
-    ' æœ¬æ–‡ä½œæˆ
+    ' –{•¶ì¬
     Dim body As String
     body = BuildEmailBody(level, title, fields)
 
-    ' CDO.Messageä½¿ç”¨ã—ã¦ãƒ¡ãƒ¼ãƒ«é€ä¿¡
+    ' CDO.Messageg—p‚µ‚Äƒ[ƒ‹‘—M
     Dim msg As Object
     Set msg = CreateObject("CDO.Message")
 
@@ -191,7 +191,7 @@ Sub SendEmailNotification(level As String, title As String, fields As Collection
         .Subject = subject
         .HTMLBody = body
 
-        ' SMTPè¨­å®š
+        ' SMTPİ’è
         .Configuration.fields("http://schemas.microsoft.com/cdo/configuration/sendusing") = 2
         .Configuration.fields("http://schemas.microsoft.com/cdo/configuration/smtpserver") = smtpServer
         .Configuration.fields("http://schemas.microsoft.com/cdo/configuration/smtpserverport") = smtpPort
@@ -215,7 +215,7 @@ End Sub
 
 Function BuildEmailBody(level As String, title As String, fields As Collection) As String
     '
-    ' ãƒ¡ãƒ¼ãƒ«æœ¬æ–‡ï¼ˆHTMLï¼‰ã‚’æ§‹ç¯‰
+    ' ƒ[ƒ‹–{•¶iHTMLj‚ğ\’z
     '
     On Error Resume Next
 
@@ -225,13 +225,13 @@ Function BuildEmailBody(level As String, title As String, fields As Collection) 
     Select Case level
         Case "WARNING"
             levelClass = "warning"
-            icon = "âš ï¸"
+            icon = "??"
         Case "ERROR"
             levelClass = "error"
-            icon = "ğŸš¨"
+            icon = "?"
         Case "CRITICAL"
             levelClass = "critical"
-            icon = "ğŸš¨ğŸš¨ğŸš¨"
+            icon = "???"
     End Select
 
     Dim html As String
@@ -257,7 +257,7 @@ Function BuildEmailBody(level As String, title As String, fields As Collection) 
     html = html & "</div>" & vbCrLf
     html = html & "<div class=""content"">" & vbCrLf
 
-    ' ãƒ•ã‚£ãƒ¼ãƒ«ãƒ‰è¿½åŠ 
+    ' ƒtƒB[ƒ‹ƒh’Ç‰Á
     Dim i As Integer
     For i = 1 To fields.Count
         Dim field As Dictionary
@@ -272,7 +272,7 @@ Function BuildEmailBody(level As String, title As String, fields As Collection) 
     html = html & "</div>" & vbCrLf
     html = html & "<div class=""footer"">" & vbCrLf
     html = html & "<p>Kabuto Auto Trader</p>" & vbCrLf
-    html = html & "<p>ç™ºç”Ÿæ™‚åˆ»: " & Format(Now, "YYYY-MM-DD HH:NN:SS") & "</p>" & vbCrLf
+    html = html & "<p>”­¶: " & Format(Now, "YYYY-MM-DD HH:NN:SS") & "</p>" & vbCrLf
     html = html & "</div>" & vbCrLf
     html = html & "</div>" & vbCrLf
     html = html & "</body>" & vbCrLf
@@ -282,35 +282,35 @@ Function BuildEmailBody(level As String, title As String, fields As Collection) 
 End Function
 
 ' ========================================
-' é€šçŸ¥é »åº¦åˆ¶é™
+' ’Ê’m•p“x§ŒÀ
 ' ========================================
 Function ShouldSendNotification(level As String, title As String) As Boolean
     '
-    ' é€šçŸ¥é »åº¦åˆ¶é™ãƒã‚§ãƒƒã‚¯
+    ' ’Ê’m•p“x§ŒÀƒ`ƒFƒbƒN
     '
     On Error Resume Next
 
-    ' CRITICAL ã¯å¸¸ã«é€šçŸ¥
+    ' CRITICAL ‚Íí‚É’Ê’m
     If level = "CRITICAL" Then
         ShouldSendNotification = True
         Exit Function
     End If
 
-    ' å‰å›ã®é€šçŸ¥æ™‚åˆ»ã‚’å–å¾—
+    ' ‘O‰ñ‚Ì’Ê’m‚ğæ“¾
     Dim lastNotifyTime As Variant
     lastNotifyTime = GetLastNotificationTime(title)
 
     If IsEmpty(lastNotifyTime) Then
-        ' åˆå›é€šçŸ¥
+        ' ‰‰ñ’Ê’m
         ShouldSendNotification = True
         Exit Function
     End If
 
-    ' çµŒéæ™‚é–“ã‚’è¨ˆç®—
+    ' Œo‰ßŠÔ‚ğŒvZ
     Dim elapsedMinutes As Long
     elapsedMinutes = DateDiff("n", lastNotifyTime, Now)
 
-    ' ãƒ¬ãƒ™ãƒ«åˆ¥ã®å†é€šçŸ¥é–“éš”
+    ' ƒŒƒxƒ‹•Ê‚ÌÄ’Ê’mŠÔŠu
     Dim intervalMinutes As Long
     Select Case level
         Case "WARNING"
@@ -330,7 +330,7 @@ End Function
 
 Function GetLastNotificationTime(title As String) As Variant
     '
-    ' å‰å›ã®é€šçŸ¥æ™‚åˆ»ã‚’å–å¾—
+    ' ‘O‰ñ‚Ì’Ê’m‚ğæ“¾
     '
     On Error Resume Next
 
@@ -349,25 +349,25 @@ End Function
 
 Sub RecordNotification(level As String, title As String)
     '
-    ' é€šçŸ¥å±¥æ­´ã‚’è¨˜éŒ²
+    ' ’Ê’m—š—ğ‚ğ‹L˜^
     '
     On Error Resume Next
 
     Dim ws As Worksheet
     Set ws = ThisWorkbook.Sheets("NotificationHistory")
 
-    ' æ—¢å­˜ã‚¨ãƒ³ãƒˆãƒªã‚’æ¤œç´¢
+    ' Šù‘¶ƒGƒ“ƒgƒŠ‚ğŒŸõ
     Dim foundCell As Range
     Set foundCell = ws.Columns(2).Find(title, LookIn:=xlValues, LookAt:=xlWhole)
 
     If Not foundCell Is Nothing Then
-        ' æ›´æ–°
+        ' XV
         Dim row As Long
         row = foundCell.row
         ws.Cells(row, 3).Value = Now
         ws.Cells(row, 4).Value = ws.Cells(row, 4).Value + 1
     Else
-        ' æ–°è¦è¿½åŠ 
+        ' V‹K’Ç‰Á
         Dim nextRow As Long
         nextRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).row + 1
 
@@ -379,7 +379,7 @@ Sub RecordNotification(level As String, title As String)
 End Sub
 
 ' ========================================
-' ç™ºæ³¨å¤±æ•—é€šçŸ¥
+' ”­’¸”s’Ê’m
 ' ========================================
 Sub NotifyOrderFailed(signal As Dictionary, reason As String)
     On Error Resume Next
@@ -388,25 +388,25 @@ Sub NotifyOrderFailed(signal As Dictionary, reason As String)
     Dim field As Dictionary
 
     Set field = New Dictionary
-    field("title") = "éŠ˜æŸ„"
+    field("title") = "–Á•¿"
     field("value") = signal("ticker") & " " & GetTickerName(signal("ticker"))
     field("short") = True
     fields.Add field
 
     Set field = New Dictionary
-    field("title") = "å£²è²·åŒºåˆ†"
-    field("value") = IIf(signal("action") = "buy", "è²·ã„", "å£²ã‚Š")
+    field("title") = "”„”ƒ‹æ•ª"
+    field("value") = IIf(signal("action") = "buy", "”ƒ‚¢", "”„‚è")
     field("short") = True
     fields.Add field
 
     Set field = New Dictionary
-    field("title") = "æ•°é‡"
-    field("value") = signal("quantity") & "æ ª"
+    field("title") = "”—Ê"
+    field("value") = signal("quantity") & "Š”"
     field("short") = True
     fields.Add field
 
     Set field = New Dictionary
-    field("title") = "å¤±æ•—ç†ç”±"
+    field("title") = "¸”s——R"
     field("value") = reason
     field("short") = True
     fields.Add field
@@ -418,16 +418,16 @@ Sub NotifyOrderFailed(signal As Dictionary, reason As String)
     fields.Add field
 
     Set field = New Dictionary
-    field("title") = "ç™ºç”Ÿæ™‚åˆ»"
+    field("title") = "”­¶"
     field("value") = Format(Now, "YYYY-MM-DD HH:NN:SS")
     field("short") = False
     fields.Add field
 
-    Call SendSlackNotification("WARNING", "ç™ºæ³¨å¤±æ•—", fields, False)
+    Call SendSlackNotification("WARNING", "”­’¸”s", fields, False)
 End Sub
 
 ' ========================================
-' é€£ç¶šå¤±æ•—é€šçŸ¥
+' ˜A‘±¸”s’Ê’m
 ' ========================================
 Sub NotifyConsecutiveFailures(failureCount As Integer, lastSignal As Dictionary, reason As String)
     On Error Resume Next
@@ -436,54 +436,54 @@ Sub NotifyConsecutiveFailures(failureCount As Integer, lastSignal As Dictionary,
     Dim field As Dictionary
 
     Set field = New Dictionary
-    field("title") = "å¤±æ•—å›æ•°"
-    field("value") = failureCount & "å›é€£ç¶š"
+    field("title") = "¸”s‰ñ”"
+    field("value") = failureCount & "‰ñ˜A‘±"
     field("short") = True
     fields.Add field
 
     Set field = New Dictionary
-    field("title") = "ç›´è¿‘ã®å¤±æ•—"
+    field("title") = "’¼‹ß‚Ì¸”s"
     field("value") = lastSignal("ticker") & " " & GetTickerName(lastSignal("ticker")) & " " & _
-                     IIf(lastSignal("action") = "buy", "è²·ã„", "å£²ã‚Š") & " " & lastSignal("quantity") & "æ ª"
+                     IIf(lastSignal("action") = "buy", "”ƒ‚¢", "”„‚è") & " " & lastSignal("quantity") & "Š”"
     field("short") = True
     fields.Add field
 
     Set field = New Dictionary
-    field("title") = "å…±é€šå¤±æ•—ç†ç”±"
+    field("title") = "‹¤’Ê¸”s——R"
     field("value") = reason
     field("short") = False
     fields.Add field
 
     Set field = New Dictionary
-    field("title") = "æ¨å¥¨å¯¾å¿œ"
+    field("title") = "„§‘Î‰"
     field("value") = GetRecommendedAction(reason)
     field("short") = False
     fields.Add field
 
-    Call SendSlackNotification("ERROR", "é€£ç¶šç™ºæ³¨å¤±æ•—ï¼ˆ" & failureCount & "å›ï¼‰", fields, False)
-    Call SendEmailNotification("ERROR", "é€£ç¶šç™ºæ³¨å¤±æ•—ï¼ˆ" & failureCount & "å›ï¼‰", fields)
+    Call SendSlackNotification("ERROR", "˜A‘±”­’¸”si" & failureCount & "‰ñj", fields, False)
+    Call SendEmailNotification("ERROR", "˜A‘±”­’¸”si" & failureCount & "‰ñj", fields)
 End Sub
 
 Function GetRecommendedAction(reason As String) As String
     '
-    ' ã‚¨ãƒ©ãƒ¼åŸå› ã«å¿œã˜ãŸæ¨å¥¨å¯¾å¿œã‚’è¿”ã™
+    ' ƒGƒ‰[Œ´ˆö‚É‰‚¶‚½„§‘Î‰‚ğ•Ô‚·
     '
     Select Case True
         Case InStr(reason, "RSS") > 0
-            GetRecommendedAction = "RSSã®æ¥ç¶šçŠ¶æ…‹ã‚’ç¢ºèªã—ã¦ãã ã•ã„"
+            GetRecommendedAction = "RSS‚ÌÚ‘±ó‘Ô‚ğŠm”F‚µ‚Ä‚­‚¾‚³‚¢"
         Case InStr(reason, "API") > 0
-            GetRecommendedAction = "APIã‚µãƒ¼ãƒãƒ¼ã®æ¥ç¶šçŠ¶æ…‹ã‚’ç¢ºèªã—ã¦ãã ã•ã„"
-        Case InStr(reason, "æ¤œè¨¼") > 0
-            GetRecommendedAction = "æ³¨æ–‡ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ã®è¨­å®šã‚’ç¢ºèªã—ã¦ãã ã•ã„"
-        Case InStr(reason, "ãƒªã‚¹ã‚¯") > 0
-            GetRecommendedAction = "ãƒªã‚¹ã‚¯è¨­å®šã‚’è¦‹ç›´ã—ã¦ãã ã•ã„"
+            GetRecommendedAction = "APIƒT[ƒo[‚ÌÚ‘±ó‘Ô‚ğŠm”F‚µ‚Ä‚­‚¾‚³‚¢"
+        Case InStr(reason, "ŒŸØ") > 0
+            GetRecommendedAction = "’•¶ƒpƒ‰ƒ[ƒ^‚Ìİ’è‚ğŠm”F‚µ‚Ä‚­‚¾‚³‚¢"
+        Case InStr(reason, "ƒŠƒXƒN") > 0
+            GetRecommendedAction = "ƒŠƒXƒNİ’è‚ğŒ©’¼‚µ‚Ä‚­‚¾‚³‚¢"
         Case Else
-            GetRecommendedAction = "ã‚·ã‚¹ãƒ†ãƒ ãƒ­ã‚°ã‚’ç¢ºèªã—ã¦ãã ã•ã„"
+            GetRecommendedAction = "ƒVƒXƒeƒ€ƒƒO‚ğŠm”F‚µ‚Ä‚­‚¾‚³‚¢"
     End Select
 End Function
 
 ' ========================================
-' Kill Switchç™ºå‹•é€šçŸ¥
+' Kill Switch”­“®’Ê’m
 ' ========================================
 Sub NotifyKillSwitchActivated(reason As String)
     On Error Resume Next
@@ -492,51 +492,51 @@ Sub NotifyKillSwitchActivated(reason As String)
     Dim field As Dictionary
 
     Set field = New Dictionary
-    field("title") = "ç™ºå‹•ç†ç”±"
+    field("title") = "”­“®——R"
     field("value") = reason
     field("short") = False
     fields.Add field
 
-    ' æœ¬æ—¥ã®å–å¼•æˆç¸¾ã‚’è¨ˆç®—
+    ' –{“ú‚Ìæˆø¬Ñ‚ğŒvZ
     Dim dailyPnL As Double
     Dim tradeCount As Integer
     Dim winCount As Integer
 
     dailyPnL = CalculateDailyPnL()
     tradeCount = GetSystemState("daily_trade_count")
-    ' winCountã®è¨ˆç®—ã¯çœç•¥ï¼ˆå®Ÿè£…å¿…è¦ã«å¿œã˜ã¦ï¼‰
+    ' winCount‚ÌŒvZ‚ÍÈ—ªiÀ‘••K—v‚É‰‚¶‚Äj
 
     Set field = New Dictionary
-    field("title") = "æœ¬æ—¥ã®å–å¼•æˆç¸¾"
-    field("value") = "æç›Š: " & Format(dailyPnL, "#,##0") & "å†† | " & _
-                     "å–å¼•å›æ•°: " & tradeCount & "å›"
+    field("title") = "–{“ú‚Ìæˆø¬Ñ"
+    field("value") = "‘¹‰v: " & Format(dailyPnL, "#,##0") & "‰~ | " & _
+                     "æˆø‰ñ”: " & tradeCount & "‰ñ"
     field("short") = False
     fields.Add field
 
     Set field = New Dictionary
-    field("title") = "ã‚·ã‚¹ãƒ†ãƒ çŠ¶æ…‹"
-    field("value") = "â›” å…¨å–å¼•åœæ­¢"
+    field("title") = "ƒVƒXƒeƒ€ó‘Ô"
+    field("value") = "? ‘Sæˆø’â~"
     field("short") = False
     fields.Add field
 
     Set field = New Dictionary
-    field("title") = "å¿…è¦ãªå¯¾å¿œ"
-    field("value") = "1. åŸå› èª¿æŸ»" & vbLf & "2. ãƒªã‚¹ã‚¯è¨­å®šè¦‹ç›´ã—" & vbLf & "3. æ‰‹å‹•ã§å†èµ·å‹•"
+    field("title") = "•K—v‚È‘Î‰"
+    field("value") = "1. Œ´ˆö’²¸" & vbLf & "2. ƒŠƒXƒNİ’èŒ©’¼‚µ" & vbLf & "3. è“®‚ÅÄ‹N“®"
     field("short") = False
     fields.Add field
 
     Set field = New Dictionary
-    field("title") = "ç™ºç”Ÿæ™‚åˆ»"
+    field("title") = "”­¶"
     field("value") = Format(Now, "YYYY-MM-DD HH:NN:SS")
     field("short") = False
     fields.Add field
 
-    Call SendSlackNotification("CRITICAL", "KILL SWITCH ç™ºå‹•", fields, True)
-    Call SendEmailNotification("CRITICAL", "KILL SWITCH ç™ºå‹•", fields)
+    Call SendSlackNotification("CRITICAL", "KILL SWITCH ”­“®", fields, True)
+    Call SendEmailNotification("CRITICAL", "KILL SWITCH ”­“®", fields)
 End Sub
 
 ' ========================================
-' ã‚·ã‚¹ãƒ†ãƒ åœæ­¢é€šçŸ¥
+' ƒVƒXƒeƒ€’â~’Ê’m
 ' ========================================
 Sub NotifySystemStopped(stopReason As String)
     On Error Resume Next
@@ -545,36 +545,36 @@ Sub NotifySystemStopped(stopReason As String)
     Dim field As Dictionary
 
     Set field = New Dictionary
-    field("title") = "åœæ­¢ç†ç”±"
+    field("title") = "’â~——R"
     field("value") = stopReason
     field("short") = False
     fields.Add field
 
     Set field = New Dictionary
-    field("title") = "åœæ­¢æ™‚åˆ»"
+    field("title") = "’â~"
     field("value") = Format(Now, "YYYY-MM-DD HH:NN:SS")
     field("short") = True
     fields.Add field
 
     Set field = New Dictionary
-    field("title") = "ç¨¼åƒæ™‚é–“"
+    field("title") = "‰Ò“­ŠÔ"
     field("value") = CalculateUptime()
     field("short") = True
     fields.Add field
 
     Set field = New Dictionary
-    field("title") = "æœ¬æ—¥ã®å–å¼•"
-    field("value") = GetSystemState("daily_trade_count") & "å›"
+    field("title") = "–{“ú‚Ìæˆø"
+    field("value") = GetSystemState("daily_trade_count") & "‰ñ"
     field("short") = True
     fields.Add field
 
-    Call SendSlackNotification("ERROR", "ã‚·ã‚¹ãƒ†ãƒ åœæ­¢", fields, False)
-    Call SendEmailNotification("ERROR", "ã‚·ã‚¹ãƒ†ãƒ åœæ­¢", fields)
+    Call SendSlackNotification("ERROR", "ƒVƒXƒeƒ€’â~", fields, False)
+    Call SendEmailNotification("ERROR", "ƒVƒXƒeƒ€’â~", fields)
 End Sub
 
 Function CalculateUptime() As String
     '
-    ' ç¨¼åƒæ™‚é–“ã‚’è¨ˆç®—
+    ' ‰Ò“­ŠÔ‚ğŒvZ
     '
     On Error Resume Next
 
@@ -582,7 +582,7 @@ Function CalculateUptime() As String
     startTime = GetSystemState("workbook_start_time")
 
     If IsEmpty(startTime) Then
-        CalculateUptime = "ä¸æ˜"
+        CalculateUptime = "•s–¾"
         Exit Function
     End If
 
@@ -594,11 +594,11 @@ Function CalculateUptime() As String
     hours = uptimeMinutes \ 60
     minutes = uptimeMinutes Mod 60
 
-    CalculateUptime = hours & "æ™‚é–“" & minutes & "åˆ†"
+    CalculateUptime = hours & "ŠÔ" & minutes & "•ª"
 End Function
 
 ' ========================================
-' ã‚¨ãƒ©ãƒ¼é »ç™ºé€šçŸ¥
+' ƒGƒ‰[•p”­’Ê’m
 ' ========================================
 Sub NotifyHighErrorRate(errorCount As Integer, timeWindow As String)
     On Error Resume Next
@@ -607,23 +607,23 @@ Sub NotifyHighErrorRate(errorCount As Integer, timeWindow As String)
     Dim field As Dictionary
 
     Set field = New Dictionary
-    field("title") = "ã‚¨ãƒ©ãƒ¼å›æ•°"
-    field("value") = errorCount & "å› / " & timeWindow
+    field("title") = "ƒGƒ‰[‰ñ”"
+    field("value") = errorCount & "‰ñ / " & timeWindow
     field("short") = True
     fields.Add field
 
     Set field = New Dictionary
-    field("title") = "é–¾å€¤"
-    field("value") = "10å› / 1æ™‚é–“"
+    field("title") = "è‡’l"
+    field("value") = "10‰ñ / 1ŠÔ"
     field("short") = True
     fields.Add field
 
     Set field = New Dictionary
-    field("title") = "æ¨å¥¨å¯¾å¿œ"
-    field("value") = "ErrorLogã‚’ç¢ºèªã—ã€å…±é€šåŸå› ã‚’èª¿æŸ»ã—ã¦ãã ã•ã„"
+    field("title") = "„§‘Î‰"
+    field("value") = "ErrorLog‚ğŠm”F‚µA‹¤’ÊŒ´ˆö‚ğ’²¸‚µ‚Ä‚­‚¾‚³‚¢"
     field("short") = False
     fields.Add field
 
-    Call SendSlackNotification("ERROR", "ã‚¨ãƒ©ãƒ¼é »ç™ºæ¤œçŸ¥", fields, False)
-    Call SendEmailNotification("ERROR", "ã‚¨ãƒ©ãƒ¼é »ç™ºæ¤œçŸ¥", fields)
+    Call SendSlackNotification("ERROR", "ƒGƒ‰[•p”­ŒŸ’m", fields, False)
+    Call SendEmailNotification("ERROR", "ƒGƒ‰[•p”­ŒŸ’m", fields)
 End Sub

@@ -1,13 +1,13 @@
 Attribute VB_Name = "Module_SignalProcessor"
 '
 ' Kabuto Auto Trader - Signal Processor Module
-' ã‚·ã‚°ãƒŠãƒ«å‡¦ç†ãƒ­ã‚¸ãƒƒã‚¯
+' ƒVƒOƒiƒ‹ˆ—ƒƒWƒbƒN
 '
 
 Option Explicit
 
 ' ========================================
-' ã‚·ã‚°ãƒŠãƒ«ã‚’ã‚­ãƒ¥ãƒ¼ã«è¿½åŠ 
+' ƒVƒOƒiƒ‹‚ğƒLƒ…[‚É’Ç‰Á
 ' ========================================
 Sub AddSignalToQueue(signal As Object)
     On Error GoTo ErrorHandler
@@ -15,7 +15,7 @@ Sub AddSignalToQueue(signal As Object)
     Dim ws As Worksheet
     Set ws = ThisWorkbook.Sheets("SignalQueue")
 
-    ' é‡è¤‡ãƒã‚§ãƒƒã‚¯
+    ' d•¡ƒ`ƒFƒbƒN
     If IsSignalInQueue(signal("signal_id")) Then
         Debug.Print "Duplicate signal: " & signal("signal_id")
         Exit Sub
@@ -24,7 +24,7 @@ Sub AddSignalToQueue(signal As Object)
     Dim lastRow As Long
     lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row + 1
 
-    ' ã‚·ã‚°ãƒŠãƒ«è¿½åŠ 
+    ' ƒVƒOƒiƒ‹’Ç‰Á
     ws.Cells(lastRow, 1).Value = signal("signal_id")
     ws.Cells(lastRow, 2).Value = Now
     ws.Cells(lastRow, 3).Value = signal("action")
@@ -32,7 +32,7 @@ Sub AddSignalToQueue(signal As Object)
     ws.Cells(lastRow, 5).Value = CLng(signal("quantity"))
     ws.Cells(lastRow, 6).Value = CDbl(signal("entry_price"))
 
-    ' Optional ãƒ•ã‚£ãƒ¼ãƒ«ãƒ‰
+    ' Optional ƒtƒB[ƒ‹ƒh
     If Not IsNull(signal("stop_loss")) Then
         ws.Cells(lastRow, 7).Value = CDbl(signal("stop_loss"))
     End If
@@ -56,7 +56,7 @@ ErrorHandler:
 End Sub
 
 ' ========================================
-' ã‚·ã‚°ãƒŠãƒ«ãŒã‚­ãƒ¥ãƒ¼ã«å­˜åœ¨ã™ã‚‹ã‹ãƒã‚§ãƒƒã‚¯
+' ƒVƒOƒiƒ‹‚ªƒLƒ…[‚É‘¶İ‚·‚é‚©ƒ`ƒFƒbƒN
 ' ========================================
 Function IsSignalInQueue(signalId As String) As Boolean
     On Error GoTo ErrorHandler
@@ -76,7 +76,7 @@ ErrorHandler:
 End Function
 
 ' ========================================
-' æ¬¡ã®ã‚·ã‚°ãƒŠãƒ«ã‚’å‡¦ç†
+' Ÿ‚ÌƒVƒOƒiƒ‹‚ğˆ—
 ' ========================================
 Sub ProcessNextSignal()
     On Error GoTo ErrorHandler
@@ -84,14 +84,14 @@ Sub ProcessNextSignal()
     Dim ws As Worksheet
     Set ws = ThisWorkbook.Sheets("SignalQueue")
 
-    ' stateãŒ"pending"ã®æœ€å¤ã‚·ã‚°ãƒŠãƒ«ã‚’å–å¾—
+    ' state‚ª"pending"‚ÌÅŒÃƒVƒOƒiƒ‹‚ğæ“¾
     Dim i As Long
     For i = 2 To ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
         If ws.Cells(i, 11).Value = "pending" Then
-            ' å‡¦ç†ä¸­ã«ãƒãƒ¼ã‚¯
+            ' ˆ—’†‚Éƒ}[ƒN
             ws.Cells(i, 11).Value = "processing"
 
-            ' ã‚·ã‚°ãƒŠãƒ«ãƒ‡ãƒ¼ã‚¿æ§‹ç¯‰
+            ' ƒVƒOƒiƒ‹ƒf[ƒ^\’z
             Dim signal As Object
             Set signal = CreateObject("Scripting.Dictionary")
 
@@ -104,14 +104,14 @@ Sub ProcessNextSignal()
             signal("take_profit") = ws.Cells(i, 8).Value
             signal("checksum") = ws.Cells(i, 10).Value
 
-            ' ã‚µãƒ¼ãƒãƒ¼ã«ACKé€ä¿¡
+            ' ƒT[ƒo[‚ÉACK‘—M
             If Not AcknowledgeSignal(signal("signal_id"), signal("checksum")) Then
                 ws.Cells(i, 11).Value = "error"
                 ws.Cells(i, 13).Value = "ACK failed"
                 Exit Sub
             End If
 
-            ' ãƒ­ãƒ¼ã‚«ãƒ«é‡è¤‡ãƒã‚§ãƒƒã‚¯ï¼ˆExecutionLogã§ç¢ºèªï¼‰
+            ' ƒ[ƒJƒ‹d•¡ƒ`ƒFƒbƒNiExecutionLog‚ÅŠm”Fj
             If IsAlreadyExecuted(signal("signal_id")) Then
                 Debug.Print "Signal already executed (local check): " & signal("signal_id")
                 ws.Cells(i, 11).Value = "completed"
@@ -119,33 +119,33 @@ Sub ProcessNextSignal()
                 Exit Sub
             End If
 
-            ' ç™ºæ³¨å‡¦ç†
+            ' ”­’ˆ—
             Dim orderId As String
             orderId = ExecuteOrder(signal)
 
             If orderId <> "" Then
-                ' æˆåŠŸ - OrderHistoryè¨˜éŒ²
+                ' ¬Œ÷ - OrderHistory‹L˜^
                 Dim internalId As String
                 internalId = RecordOrder(signal, orderId, "submitted")
 
-                ' ã‚­ãƒ¥ãƒ¼æ›´æ–°
+                ' ƒLƒ…[XV
                 ws.Cells(i, 11).Value = "completed"
                 ws.Cells(i, 12).Value = Now
 
-                ' ç´„å®šãƒãƒ¼ãƒªãƒ³ã‚°é–‹å§‹ï¼ˆåˆ¥é€”å®šæœŸå®Ÿè¡Œï¼‰
-                ' PollOrderStatus ã¯åˆ¥ã®ã‚¿ã‚¤ãƒãƒ¼ã§å®šæœŸå®Ÿè¡Œ
+                ' –ñ’èƒ|[ƒŠƒ“ƒOŠJni•Ê“r’èŠúÀsj
+                ' PollOrderStatus ‚Í•Ê‚Ìƒ^ƒCƒ}[‚Å’èŠúÀs
 
             Else
-                ' å¤±æ•—
+                ' ¸”s
                 ws.Cells(i, 11).Value = "error"
                 ws.Cells(i, 13).Value = "Order execution failed"
             End If
 
-            Exit For  ' 1ã‚·ã‚°ãƒŠãƒ«ã®ã¿å‡¦ç†
+            Exit For  ' 1ƒVƒOƒiƒ‹‚Ì‚İˆ—
         End If
     Next i
 
-    ' å®Œäº†ã—ãŸã‚·ã‚°ãƒŠãƒ«ã‚’ã‚¯ãƒªãƒ¼ãƒ³ã‚¢ãƒƒãƒ—ï¼ˆ1æ™‚é–“çµŒéå¾Œï¼‰
+    ' Š®—¹‚µ‚½ƒVƒOƒiƒ‹‚ğƒNƒŠ[ƒ“ƒAƒbƒvi1ŠÔŒo‰ßŒãj
     Call CleanupCompletedSignals
 
     Exit Sub
@@ -156,7 +156,7 @@ ErrorHandler:
 End Sub
 
 ' ========================================
-' å®Œäº†æ¸ˆã¿ã‚·ã‚°ãƒŠãƒ«ã‚’ã‚¯ãƒªãƒ¼ãƒ³ã‚¢ãƒƒãƒ—
+' Š®—¹Ï‚İƒVƒOƒiƒ‹‚ğƒNƒŠ[ƒ“ƒAƒbƒv
 ' ========================================
 Sub CleanupCompletedSignals()
     On Error Resume Next
@@ -179,7 +179,7 @@ Sub CleanupCompletedSignals()
 End Sub
 
 ' ========================================
-' ãƒ­ãƒ¼ã‚«ãƒ«ãƒ­ã‚°ã§é‡è¤‡ãƒã‚§ãƒƒã‚¯
+' ƒ[ƒJƒ‹ƒƒO‚Åd•¡ƒ`ƒFƒbƒN
 ' ========================================
 Function IsAlreadyExecuted(signalId As String) As Boolean
     On Error Resume Next

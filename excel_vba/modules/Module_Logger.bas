@@ -1,13 +1,13 @@
 Attribute VB_Name = "Module_Logger"
 '
 ' Kabuto Auto Trader - Logger Module
-' ãƒ­ã‚°è¨˜éŒ²
+' ƒƒO‹L˜^
 '
 
 Option Explicit
 
 ' ========================================
-' ã‚¨ãƒ©ãƒ¼ãƒ­ã‚°è¨˜éŒ²
+' ƒGƒ‰[ƒƒO‹L˜^
 ' ========================================
 Sub LogError(errorType As String, module As String, errorMsg As String, Optional ticker As String = "", Optional severity As String = "ERROR")
     On Error Resume Next
@@ -35,22 +35,22 @@ Sub LogError(errorType As String, module As String, errorMsg As String, Optional
 
     Debug.Print "Error logged: " & errorId & " - " & errorMsg
 
-    ' CRITICAL ã‚¨ãƒ©ãƒ¼ã®å ´åˆã¯ã‚¢ãƒ©ãƒ¼ãƒˆ
+    ' CRITICAL ƒGƒ‰[‚Ìê‡‚ÍƒAƒ‰[ƒg
     If severity = "CRITICAL" Then
         Call SendCriticalAlert(errorMsg)
     End If
 End Sub
 
 ' ========================================
-' å®Ÿè¡Œæ¸ˆã¿ã‚·ã‚°ãƒŠãƒ«ã‚’ãƒ­ã‚°è¨˜éŒ²
+' ÀsÏ‚İƒVƒOƒiƒ‹‚ğƒƒO‹L˜^
 ' ========================================
 Sub LogExecutedSignal(signalId As String, ticker As String, orderId As String)
-    ' ExecutionLogã«è¨˜éŒ²æ¸ˆã¿ãªã®ã§ã€ã“ã“ã§ã¯è¿½åŠ å‡¦ç†ãªã—
+    ' ExecutionLog‚É‹L˜^Ï‚İ‚È‚Ì‚ÅA‚±‚±‚Å‚Í’Ç‰Áˆ—‚È‚µ
     Debug.Print "Signal executed and logged: " & signalId
 End Sub
 
 ' ========================================
-' ãƒ•ã‚¡ã‚¤ãƒ«ãƒ­ã‚°æ›¸ãè¾¼ã¿
+' ƒtƒ@ƒCƒ‹ƒƒO‘‚«‚İ
 ' ========================================
 Sub WriteLog(message As String)
     On Error Resume Next
@@ -63,7 +63,7 @@ Sub WriteLog(message As String)
 
     Set fso = CreateObject("Scripting.FileSystemObject")
 
-    ' ãƒ­ã‚°ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªãŒå­˜åœ¨ã—ãªã„å ´åˆã¯ä½œæˆ
+    ' ƒƒOƒfƒBƒŒƒNƒgƒŠ‚ª‘¶İ‚µ‚È‚¢ê‡‚Íì¬
     Dim logDir As String
     logDir = "C:\Kabuto\Logs"
 
@@ -71,7 +71,7 @@ Sub WriteLog(message As String)
         fso.CreateFolder logDir
     End If
 
-    ' è¿½è¨˜ãƒ¢ãƒ¼ãƒ‰
+    ' ’Ç‹Lƒ‚[ƒh
     If fso.FileExists(logPath) Then
         Set ts = fso.OpenTextFile(logPath, 8)  ' ForAppending=8
     Else
@@ -86,23 +86,23 @@ Sub WriteLog(message As String)
 End Sub
 
 ' ========================================
-' é‡å¤§ã‚¨ãƒ©ãƒ¼æ™‚ã®ã‚¢ãƒ©ãƒ¼ãƒˆé€ä¿¡
+' d‘åƒGƒ‰[‚ÌƒAƒ‰[ƒg‘—M
 ' ========================================
 Sub SendCriticalAlert(errorMsg As String)
     On Error Resume Next
 
-    ' æ–¹æ³•1: ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ãƒœãƒƒã‚¯ã‚¹ã§é€šçŸ¥
-    MsgBox "ã€é‡å¤§ã‚¨ãƒ©ãƒ¼ã€‘" & vbCrLf & errorMsg, vbCritical, "Kabuto Auto Trader"
+    ' •û–@1: ƒƒbƒZ[ƒWƒ{ƒbƒNƒX‚Å’Ê’m
+    MsgBox "yd‘åƒGƒ‰[z" & vbCrLf & errorMsg, vbCritical, "Kabuto Auto Trader"
 
-    ' æ–¹æ³•2: ã‚·ã‚¹ãƒ†ãƒ åœæ­¢
+    ' •û–@2: ƒVƒXƒeƒ€’â~
     Call StopAutoTrading
 
-    ' æ–¹æ³•3: ã‚µãƒ¼ãƒãƒ¼ã«ã‚¢ãƒ©ãƒ¼ãƒˆé€ä¿¡ï¼ˆTODOï¼‰
+    ' •û–@3: ƒT[ƒo[‚ÉƒAƒ‰[ƒg‘—MiTODOj
     ' Call SendAlertToServer(errorMsg)
 End Sub
 
 ' ========================================
-' å¤ã„ãƒ­ã‚°ã®ã‚¯ãƒªãƒ¼ãƒ³ã‚¢ãƒƒãƒ—
+' ŒÃ‚¢ƒƒO‚ÌƒNƒŠ[ƒ“ƒAƒbƒv
 ' ========================================
 Sub CleanupOldLogs()
     On Error Resume Next
@@ -114,7 +114,7 @@ Sub CleanupOldLogs()
     Dim cutoffDate As Date
     cutoffDate = DateAdd("d", -retentionDays, Date)
 
-    ' ErrorLogã‚¯ãƒªãƒ¼ãƒ³ã‚¢ãƒƒãƒ—
+    ' ErrorLogƒNƒŠ[ƒ“ƒAƒbƒv
     Dim ws As Worksheet
     Set ws = ThisWorkbook.Sheets("ErrorLog")
 
@@ -128,7 +128,7 @@ Sub CleanupOldLogs()
         End If
     Next i
 
-    ' OrderHistoryã‚¯ãƒªãƒ¼ãƒ³ã‚¢ãƒƒãƒ—
+    ' OrderHistoryƒNƒŠ[ƒ“ƒAƒbƒv
     Set ws = ThisWorkbook.Sheets("OrderHistory")
 
     For i = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row To 2 Step -1
@@ -140,7 +140,7 @@ Sub CleanupOldLogs()
         End If
     Next i
 
-    ' ExecutionLogã‚¯ãƒªãƒ¼ãƒ³ã‚¢ãƒƒãƒ—
+    ' ExecutionLogƒNƒŠ[ƒ“ƒAƒbƒv
     Set ws = ThisWorkbook.Sheets("ExecutionLog")
 
     For i = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row To 2 Step -1
@@ -156,11 +156,11 @@ Sub CleanupOldLogs()
 End Sub
 
 ' ========================================
-' SignalLogé–¢é€£
+' SignalLogŠÖ˜A
 ' ========================================
 Function LogSignalReceived(signal As Dictionary) As String
     '
-    ' ã‚·ã‚°ãƒŠãƒ«å—ä¿¡ã‚’SignalLogã«è¨˜éŒ²
+    ' ƒVƒOƒiƒ‹óM‚ğSignalLog‚É‹L˜^
     '
     On Error Resume Next
 
@@ -195,14 +195,14 @@ End Function
 
 Sub UpdateSignalStatus(signalId As String, status As String, Optional errorMsg As String = "")
     '
-    ' ã‚·ã‚°ãƒŠãƒ«çŠ¶æ…‹ã‚’æ›´æ–°
+    ' ƒVƒOƒiƒ‹ó‘Ô‚ğXV
     '
     On Error Resume Next
 
     Dim ws As Worksheet
     Set ws = ThisWorkbook.Sheets("SignalLog")
 
-    ' signal_idã§è©²å½“è¡Œã‚’æ¤œç´¢
+    ' signal_id‚ÅŠY“–s‚ğŒŸõ
     Dim foundCell As Range
     Set foundCell = ws.Columns(3).Find(signalId, LookIn:=xlValues, LookAt:=xlWhole)
 
@@ -230,7 +230,7 @@ End Sub
 
 Sub MarkSignalACKSent(signalId As String)
     '
-    ' ã‚·ã‚°ãƒŠãƒ«ã®ACKé€ä¿¡ã‚’ãƒãƒ¼ã‚¯
+    ' ƒVƒOƒiƒ‹‚ÌACK‘—M‚ğƒ}[ƒN
     '
     On Error Resume Next
 
@@ -247,11 +247,11 @@ Sub MarkSignalACKSent(signalId As String)
 End Sub
 
 ' ========================================
-' OrderHistoryé–¢é€£
+' OrderHistoryŠÖ˜A
 ' ========================================
 Function LogOrderSubmitted(signal As Dictionary, orderParams As Dictionary, rssOrderId As String) As String
     '
-    ' æ³¨æ–‡ç™ºæ³¨ã‚’OrderHistoryã«è¨˜éŒ²
+    ' ’•¶”­’‚ğOrderHistory‚É‹L˜^
     '
     On Error Resume Next
 
@@ -287,7 +287,7 @@ End Function
 
 Sub UpdateOrderExecution(internalOrderId As String, filledQty As Integer, filledPrice As Double, commission As Double)
     '
-    ' æ³¨æ–‡ç´„å®šæƒ…å ±ã‚’æ›´æ–°
+    ' ’•¶–ñ’èî•ñ‚ğXV
     '
     On Error Resume Next
 
@@ -321,7 +321,7 @@ End Sub
 
 Sub UpdateOrderStatus(internalOrderId As String, status As String, Optional rejectReason As String = "")
     '
-    ' æ³¨æ–‡çŠ¶æ…‹ã‚’æ›´æ–°
+    ' ’•¶ó‘Ô‚ğXV
     '
     On Error Resume Next
 
@@ -343,11 +343,11 @@ Sub UpdateOrderStatus(internalOrderId As String, status As String, Optional reje
 End Sub
 
 ' ========================================
-' ExecutionLogé–¢é€£
+' ExecutionLogŠÖ˜A
 ' ========================================
 Sub LogExecution(signal As Dictionary, orderInfo As Dictionary, executionInfo As Dictionary)
     '
-    ' ç´„å®šã‚’ExecutionLogã«è¨˜éŒ²
+    ' –ñ’è‚ğExecutionLog‚É‹L˜^
     '
     On Error Resume Next
 
@@ -383,7 +383,7 @@ Sub LogExecution(signal As Dictionary, orderInfo As Dictionary, executionInfo As
     ws.Cells(nextRow, 15).Value = signal("strategy")
     ws.Cells(nextRow, 16).Value = GetMarketSession()
 
-    ' å£²å´æ™‚ã¯æç›Šã‚’è¨ˆç®—
+    ' ”„‹p‚Í‘¹‰v‚ğŒvZ
     If signal("action") = "sell" Then
         Dim pnl As Double
         pnl = CalculateRealizedPnL(signal("ticker"), executionInfo("quantity"), executionInfo("price"), executionInfo("commission"))
@@ -404,13 +404,13 @@ Sub LogExecution(signal As Dictionary, orderInfo As Dictionary, executionInfo As
 End Sub
 
 ' ========================================
-' SystemLogé–¢é€£
+' SystemLogŠÖ˜A
 ' ========================================
 Sub LogSystemEvent(level As String, category As String, eventName As String, message As String, _
                    Optional moduleName As String = "", Optional functionName As String = "", _
                    Optional details As String = "")
     '
-    ' ã‚·ã‚¹ãƒ†ãƒ ã‚¤ãƒ™ãƒ³ãƒˆã‚’SystemLogã«è¨˜éŒ²
+    ' ƒVƒXƒeƒ€ƒCƒxƒ“ƒg‚ğSystemLog‚É‹L˜^
     '
     On Error Resume Next
 
@@ -437,14 +437,14 @@ Sub LogSystemEvent(level As String, category As String, eventName As String, mes
     ws.Cells(nextRow, 12).Value = GetSystemState("rss_connection_status")
     ws.Cells(nextRow, 13).Value = GetMarketSession()
 
-    ' INFOãƒ¬ãƒ™ãƒ«ä»¥ä¸Šã¯Debug.Printã‚‚å‡ºåŠ›
+    ' INFOƒŒƒxƒ‹ˆÈã‚ÍDebug.Print‚ào—Í
     If level <> "DEBUG" Then
         Debug.Print "SystemLog: [" & level & "] " & eventName & " - " & message
     End If
 End Sub
 
 ' ========================================
-' AuditLogé–¢é€£
+' AuditLogŠÖ˜A
 ' ========================================
 Sub LogAudit(operation As String, operator As String, result As String, resultDetail As String, _
              Optional signalId As String = "", Optional internalOrderId As String = "", _
@@ -453,7 +453,7 @@ Sub LogAudit(operation As String, operator As String, result As String, resultDe
              Optional validationPassed As Boolean = True, Optional safetyChecks As String = "", _
              Optional riskChecks As String = "", Optional checksum As String = "")
     '
-    ' ç›£æŸ»ãƒ­ã‚°ã‚’AuditLogã«è¨˜éŒ²
+    ' ŠÄ¸ƒƒO‚ğAuditLog‚É‹L˜^
     '
     On Error Resume Next
 
@@ -489,18 +489,18 @@ Sub LogAudit(operation As String, operator As String, result As String, resultDe
 End Sub
 
 ' ========================================
-' ãƒ¦ãƒ¼ãƒ†ã‚£ãƒªãƒ†ã‚£é–¢æ•°
+' ƒ†[ƒeƒBƒŠƒeƒBŠÖ”
 ' ========================================
 Function FormatTimestamp(dt As Date) As String
     '
-    ' ã‚¿ã‚¤ãƒ ã‚¹ã‚¿ãƒ³ãƒ—ã‚’ãƒ•ã‚©ãƒ¼ãƒãƒƒãƒˆ
+    ' ƒ^ƒCƒ€ƒXƒ^ƒ“ƒv‚ğƒtƒH[ƒ}ƒbƒg
     '
     FormatTimestamp = Format(dt, "YYYY-MM-DD HH:NN:SS")
 End Function
 
 Sub ArchiveOldLogs()
     '
-    ' å¤ã„ãƒ­ã‚°ã‚’ã‚¢ãƒ¼ã‚«ã‚¤ãƒ–
+    ' ŒÃ‚¢ƒƒO‚ğƒA[ƒJƒCƒu
     '
     On Error Resume Next
 
@@ -512,13 +512,13 @@ Sub ArchiveOldLogs()
         Dim sheetName As String
         sheetName = logsToArchive(i)
 
-        Call ArchiveLogSheet(sheetName, 90)  ' 90æ—¥ä»¥å‰ã‚’ã‚¢ãƒ¼ã‚«ã‚¤ãƒ–
+        Call ArchiveLogSheet(sheetName, 90)  ' 90“úˆÈ‘O‚ğƒA[ƒJƒCƒu
     Next i
 End Sub
 
 Sub ArchiveLogSheet(sheetName As String, daysToKeep As Integer)
     '
-    ' ãƒ­ã‚°ã‚·ãƒ¼ãƒˆã‚’ã‚¢ãƒ¼ã‚«ã‚¤ãƒ–
+    ' ƒƒOƒV[ƒg‚ğƒA[ƒJƒCƒu
     '
     On Error Resume Next
 
@@ -528,7 +528,7 @@ Sub ArchiveLogSheet(sheetName As String, daysToKeep As Integer)
     Dim archiveDate As Date
     archiveDate = DateAdd("d", -daysToKeep, Date)
 
-    ' ã‚¢ãƒ¼ã‚«ã‚¤ãƒ–ã‚·ãƒ¼ãƒˆã‚’ä½œæˆï¼ˆå­˜åœ¨ã—ãªã‘ã‚Œã°ï¼‰
+    ' ƒA[ƒJƒCƒuƒV[ƒg‚ğì¬i‘¶İ‚µ‚È‚¯‚ê‚Îj
     Dim archiveSheetName As String
     archiveSheetName = sheetName & "_Archive"
 
@@ -539,29 +539,29 @@ Sub ArchiveLogSheet(sheetName As String, daysToKeep As Integer)
         Set archiveWs = ThisWorkbook.Sheets.Add
         archiveWs.Name = archiveSheetName
 
-        ' ãƒ˜ãƒƒãƒ€ãƒ¼ã‚’ã‚³ãƒ”ãƒ¼
+        ' ƒwƒbƒ_[‚ğƒRƒs[
         ws.Rows(1).Copy archiveWs.Rows(1)
     End If
     On Error GoTo 0
 
-    ' å¤ã„ãƒ­ã‚°ã‚’ç§»å‹•
+    ' ŒÃ‚¢ƒƒO‚ğˆÚ“®
     Dim lastRow As Long
     lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
 
     Dim j As Long
     For j = lastRow To 2 Step -1
         Dim logDate As Date
-        logDate = ws.Cells(j, 2).Value  ' Båˆ—: timestamp
+        logDate = ws.Cells(j, 2).Value  ' B—ñ: timestamp
 
         If logDate < archiveDate Then
-            ' ã‚¢ãƒ¼ã‚«ã‚¤ãƒ–ã‚·ãƒ¼ãƒˆã®æœ€çµ‚è¡Œã‚’å–å¾—
+            ' ƒA[ƒJƒCƒuƒV[ƒg‚ÌÅIs‚ğæ“¾
             Dim archiveLastRow As Long
             archiveLastRow = archiveWs.Cells(archiveWs.Rows.Count, 1).End(xlUp).Row + 1
 
-            ' è¡Œã‚’ã‚³ãƒ”ãƒ¼
+            ' s‚ğƒRƒs[
             ws.Rows(j).Copy archiveWs.Rows(archiveLastRow)
 
-            ' å…ƒã®è¡Œã‚’å‰Šé™¤
+            ' Œ³‚Ìs‚ğíœ
             ws.Rows(j).Delete
         End If
     Next j
@@ -571,19 +571,19 @@ End Sub
 
 Sub CheckAlertsAndNotify()
     '
-    ' ã‚¢ãƒ©ãƒ¼ãƒˆæ¡ä»¶ã‚’ãƒã‚§ãƒƒã‚¯ã—ã¦é€šçŸ¥
+    ' ƒAƒ‰[ƒgğŒ‚ğƒ`ƒFƒbƒN‚µ‚Ä’Ê’m
     '
     On Error Resume Next
 
-    ' 1. éå»1æ™‚é–“ã®ã‚¨ãƒ©ãƒ¼ä»¶æ•°ãƒã‚§ãƒƒã‚¯
+    ' 1. ‰ß‹1ŠÔ‚ÌƒGƒ‰[Œ”ƒ`ƒFƒbƒN
     Dim errorCount As Integer
     errorCount = CountErrorsInLastHour()
 
     If errorCount >= 10 Then
-        Call NotifyHighErrorRate(errorCount, "1æ™‚é–“")
+        Call NotifyHighErrorRate(errorCount, "1ŠÔ")
     End If
 
-    ' 2. æ—¥æ¬¡æå¤±ãƒã‚§ãƒƒã‚¯
+    ' 2. “úŸ‘¹¸ƒ`ƒFƒbƒN
     Dim dailyPnL As Double
     dailyPnL = CalculateDailyPnL()
 
@@ -592,22 +592,22 @@ Sub CheckAlertsAndNotify()
         Dim field As Dictionary
 
         Set field = New Dictionary
-        field("title") = "æ—¥æ¬¡æç›Š"
-        field("value") = Format(dailyPnL, "#,##0") & "å††"
+        field("title") = "“úŸ‘¹‰v"
+        field("value") = Format(dailyPnL, "#,##0") & "‰~"
         field("short") = True
         fields.Add field
 
         Set field = New Dictionary
-        field("title") = "æå¤±é™åº¦"
-        field("value") = "-50,000å††"
+        field("title") = "‘¹¸ŒÀ“x"
+        field("value") = "-50,000‰~"
         field("short") = True
         fields.Add field
 
-        Call SendSlackNotification("CRITICAL", "æ—¥æ¬¡æå¤±é™åº¦åˆ°é”", fields, True)
+        Call SendSlackNotification("CRITICAL", "“úŸ‘¹¸ŒÀ“x“’B", fields, True)
         Call ActivateKillSwitch("Daily loss limit exceeded")
     End If
 
-    ' 3. APIæ¥ç¶šçŠ¶æ…‹ãƒã‚§ãƒƒã‚¯
+    ' 3. APIÚ‘±ó‘Ôƒ`ƒFƒbƒN
     Dim apiStatus As String
     apiStatus = GetSystemState("api_connection_status")
 
@@ -616,18 +616,18 @@ Sub CheckAlertsAndNotify()
         Dim apiField As Dictionary
 
         Set apiField = New Dictionary
-        apiField("title") = "æ¥ç¶šçŠ¶æ…‹"
-        apiField("value") = "åˆ‡æ–­"
+        apiField("title") = "Ú‘±ó‘Ô"
+        apiField("value") = "Ø’f"
         apiField("short") = True
         apiFields.Add apiField
 
-        Call SendSlackNotification("ERROR", "APIæ¥ç¶šæ–­", apiFields, False)
+        Call SendSlackNotification("ERROR", "APIÚ‘±’f", apiFields, False)
     End If
 End Sub
 
 Function CountErrorsInLastHour() As Integer
     '
-    ' éå»1æ™‚é–“ã®ã‚¨ãƒ©ãƒ¼ä»¶æ•°ã‚’é›†è¨ˆ
+    ' ‰ß‹1ŠÔ‚ÌƒGƒ‰[Œ”‚ğWŒv
     '
     On Error Resume Next
 

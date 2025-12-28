@@ -1,17 +1,17 @@
 Attribute VB_Name = "Module_Main"
 '
 ' Kabuto Auto Trader - Main Module
-' ãƒ¡ã‚¤ãƒ³ãƒ«ãƒ¼ãƒãƒ³ã€è‡ªå‹•å®Ÿè¡Œåˆ¶å¾¡
+' ƒƒCƒ“ƒ‹[ƒ`ƒ“A©“®Às§Œä
 '
 
 Option Explicit
 
-' ã‚°ãƒ­ãƒ¼ãƒãƒ«å¤‰æ•°
+' ƒOƒ[ƒoƒ‹•Ï”
 Public nextPollingTime As Date
 Public isAutoTradingRunning As Boolean
 
 ' ========================================
-' è‡ªå‹•å£²è²·é–‹å§‹
+' ©“®”„”ƒŠJn
 ' ========================================
 Sub StartAutoTrading()
     If isAutoTradingRunning Then
@@ -28,15 +28,15 @@ Sub StartAutoTrading()
     Debug.Print "Time: " & Now
     Debug.Print "========================================="
 
-    ' ãƒ€ãƒƒã‚·ãƒ¥ãƒœãƒ¼ãƒ‰ã‚’ã‚¢ã‚¯ãƒ†ã‚£ãƒ–åŒ–
+    ' ƒ_ƒbƒVƒ…ƒ{[ƒh‚ğƒAƒNƒeƒBƒu‰»
     ThisWorkbook.Sheets("Dashboard").Activate
 
-    ' åˆå›ãƒãƒ¼ãƒªãƒ³ã‚°å®Ÿè¡Œ
+    ' ‰‰ñƒ|[ƒŠƒ“ƒOÀs
     Call PollAndProcessSignals
 End Sub
 
 ' ========================================
-' è‡ªå‹•å£²è²·ä¸€æ™‚åœæ­¢
+' ©“®”„”ƒˆê’â~
 ' ========================================
 Sub PauseAutoTrading()
     isAutoTradingRunning = False
@@ -47,11 +47,11 @@ Sub PauseAutoTrading()
     On Error GoTo 0
 
     Debug.Print "Auto trading paused"
-    MsgBox "è‡ªå‹•å£²è²·ã‚’ä¸€æ™‚åœæ­¢ã—ã¾ã—ãŸ", vbInformation, "Kabuto Auto Trader"
+    MsgBox "©“®”„”ƒ‚ğˆê’â~‚µ‚Ü‚µ‚½", vbInformation, "Kabuto Auto Trader"
 End Sub
 
 ' ========================================
-' è‡ªå‹•å£²è²·åœæ­¢
+' ©“®”„”ƒ’â~
 ' ========================================
 Sub StopAutoTrading()
     isAutoTradingRunning = False
@@ -62,23 +62,23 @@ Sub StopAutoTrading()
     On Error GoTo 0
 
     Debug.Print "Auto trading stopped"
-    MsgBox "è‡ªå‹•å£²è²·ã‚’åœæ­¢ã—ã¾ã—ãŸ", vbInformation, "Kabuto Auto Trader"
+    MsgBox "©“®”„”ƒ‚ğ’â~‚µ‚Ü‚µ‚½", vbInformation, "Kabuto Auto Trader"
 End Sub
 
 ' ========================================
-' ãƒ¡ã‚¤ãƒ³ãƒãƒ¼ãƒªãƒ³ã‚°ãƒ«ãƒ¼ãƒãƒ³ï¼ˆ5ç§’æ¯ã«å®Ÿè¡Œï¼‰
+' ƒƒCƒ“ƒ|[ƒŠƒ“ƒOƒ‹[ƒ`ƒ“i5•b–ˆ‚ÉÀsj
 ' ========================================
 Sub PollAndProcessSignals()
     On Error GoTo ErrorHandler
 
-    ' ã‚·ã‚¹ãƒ†ãƒ çŠ¶æ…‹ãƒã‚§ãƒƒã‚¯
+    ' ƒVƒXƒeƒ€ó‘Ôƒ`ƒFƒbƒN
     If Not isAutoTradingRunning Then Exit Sub
 
-    ' æœ€çµ‚æ›´æ–°æ™‚åˆ»
+    ' ÅIXV
     Call SetSystemState("last_update", Now)
     Call UpdateDashboardTime
 
-    ' å¸‚å ´æ™‚é–“ãƒã‚§ãƒƒã‚¯
+    ' sêŠÔƒ`ƒFƒbƒN
     If GetConfig("ENABLE_MARKET_HOURS_CHECK") = "TRUE" Then
         If Not IsMarketOpen() Then
             Debug.Print "Market is closed - skipping poll"
@@ -86,7 +86,7 @@ Sub PollAndProcessSignals()
         End If
     End If
 
-    ' APIæ¥ç¶šãƒã‚§ãƒƒã‚¯
+    ' APIÚ‘±ƒ`ƒFƒbƒN
     If Not CheckAPIConnection() Then
         Call SetSystemState("api_connection_status", "Error")
         Call LogError("API_ERROR", "PollAndProcessSignals", "API connection failed", "")
@@ -95,7 +95,7 @@ Sub PollAndProcessSignals()
         Call SetSystemState("api_connection_status", "OK")
     End If
 
-    ' ã‚µãƒ¼ãƒãƒ¼ã‹ã‚‰ã‚·ã‚°ãƒŠãƒ«å–å¾—
+    ' ƒT[ƒo[‚©‚çƒVƒOƒiƒ‹æ“¾
     Dim signals As Collection
     Set signals = FetchPendingSignals()
 
@@ -104,7 +104,7 @@ Sub PollAndProcessSignals()
             Debug.Print "Fetched " & signals.Count & " signals"
             Call SetSystemState("last_signal_time", Now)
 
-            ' å„ã‚·ã‚°ãƒŠãƒ«ã‚’ã‚­ãƒ¥ãƒ¼ã«è¿½åŠ 
+            ' ŠeƒVƒOƒiƒ‹‚ğƒLƒ…[‚É’Ç‰Á
             Dim signal As Object
             For Each signal In signals
                 Call AddSignalToQueue(signal)
@@ -112,20 +112,20 @@ Sub PollAndProcessSignals()
         End If
     End If
 
-    ' ã‚­ãƒ¥ãƒ¼ã‹ã‚‰ã‚·ã‚°ãƒŠãƒ«ã‚’å‡¦ç†
+    ' ƒLƒ…[‚©‚çƒVƒOƒiƒ‹‚ğˆ—
     Call ProcessNextSignal
 
-    ' ãƒã‚¸ã‚·ãƒ§ãƒ³ã®ç¾åœ¨ä¾¡æ ¼ã‚’æ›´æ–°ï¼ˆ30ç§’æ¯ï¼‰
+    ' ƒ|ƒWƒVƒ‡ƒ“‚ÌŒ»İ‰¿Ši‚ğXVi30•b–ˆj
     Static lastPriceUpdate As Date
     If DateDiff("s", lastPriceUpdate, Now) >= 30 Or lastPriceUpdate = 0 Then
         Call UpdateCurrentPrices
         lastPriceUpdate = Now
     End If
 
-    ' ãƒ€ãƒƒã‚·ãƒ¥ãƒœãƒ¼ãƒ‰æ›´æ–°
+    ' ƒ_ƒbƒVƒ…ƒ{[ƒhXV
     Call UpdateDashboard
 
-    ' ãƒãƒ¼ãƒˆãƒ“ãƒ¼ãƒˆé€ä¿¡ï¼ˆ60ç§’æ¯ï¼‰
+    ' ƒn[ƒgƒr[ƒg‘—Mi60•b–ˆj
     Static lastHeartbeat As Date
     If DateDiff("s", lastHeartbeat, Now) >= 60 Or lastHeartbeat = 0 Then
         Call SendHeartbeat
@@ -133,7 +133,7 @@ Sub PollAndProcessSignals()
     End If
 
 ScheduleNext:
-    ' æ¬¡å›å®Ÿè¡Œã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ«
+    ' Ÿ‰ñÀsƒXƒPƒWƒ…[ƒ‹
     Dim interval As Integer
     interval = CInt(GetConfig("POLLING_INTERVAL_SEC"))
     If interval = 0 Then interval = 5
@@ -149,13 +149,13 @@ ErrorHandler:
     Debug.Print "Error in PollAndProcessSignals: " & Err.Description
     Call LogError("SYSTEM_ERROR", "PollAndProcessSignals", Err.Description, "", "CRITICAL")
 
-    ' ã‚¨ãƒ©ãƒ¼ã§ã‚‚ç¶™ç¶šï¼ˆ10ç§’å¾Œã«å†è©¦è¡Œï¼‰
+    ' ƒGƒ‰[‚Å‚àŒp‘±i10•bŒã‚ÉÄsj
     nextPollingTime = Now + TimeValue("00:00:10")
     Application.OnTime nextPollingTime, "PollAndProcessSignals"
 End Sub
 
 ' ========================================
-' ãƒ€ãƒƒã‚·ãƒ¥ãƒœãƒ¼ãƒ‰æ›´æ–°
+' ƒ_ƒbƒVƒ…ƒ{[ƒhXV
 ' ========================================
 Sub UpdateDashboard()
     On Error Resume Next
@@ -163,11 +163,11 @@ Sub UpdateDashboard()
     Dim ws As Worksheet
     Set ws = ThisWorkbook.Sheets("Dashboard")
 
-    ' æœ€æ–°ã‚·ã‚°ãƒŠãƒ«è¡¨ç¤ºã‚’æ›´æ–°
+    ' ÅVƒVƒOƒiƒ‹•\¦‚ğXV
     Call UpdateDashboardSignals
 
-    ' å„ç¨®ã‚«ã‚¦ãƒ³ãƒˆæ›´æ–°ã¯ã‚»ãƒ«æ•°å¼ã§è‡ªå‹•è¨ˆç®—
-    ' æ‰‹å‹•æ›´æ–°ä¸è¦
+    ' ŠeíƒJƒEƒ“ƒgXV‚ÍƒZƒ‹”®‚Å©“®ŒvZ
+    ' è“®XV•s—v
 
 End Sub
 
@@ -176,7 +176,7 @@ Sub UpdateDashboardTime()
     Dim ws As Worksheet
     Set ws = ThisWorkbook.Sheets("Dashboard")
 
-    ' æœ€çµ‚æ›´æ–°æ™‚åˆ»ã‚’è¡¨ç¤ºï¼ˆä¾‹: B3ã‚»ãƒ«ï¼‰
+    ' ÅIXV‚ğ•\¦i—á: B3ƒZƒ‹j
     ws.Range("B3").Value = Now
 End Sub
 
@@ -186,7 +186,7 @@ Sub UpdateDashboardSignals()
     Dim ws As Worksheet
     Set ws = ThisWorkbook.Sheets("Dashboard")
 
-    ' OrderHistoryã‹ã‚‰æœ€æ–°5ä»¶å–å¾—ã—ã¦è¡¨ç¤ºï¼ˆB26:G30ï¼‰
+    ' OrderHistory‚©‚çÅV5Œæ“¾‚µ‚Ä•\¦iB26:G30j
     Dim wsOrder As Worksheet
     Set wsOrder = ThisWorkbook.Sheets("OrderHistory")
 
@@ -195,7 +195,7 @@ Sub UpdateDashboardSignals()
 
     If lastRow < 2 Then Exit Sub
 
-    ' æœ€æ–°5ä»¶è¡¨ç¤º
+    ' ÅV5Œ•\¦
     Dim startRow As Long
     startRow = Application.Max(2, lastRow - 4)
 
@@ -203,33 +203,33 @@ Sub UpdateDashboardSignals()
     Dim targetRow As Long
     targetRow = 26
 
-    ' ãƒ‡ãƒ¼ã‚¿ã‚’ã‚¯ãƒªã‚¢
+    ' ƒf[ƒ^‚ğƒNƒŠƒA
     ws.Range("B26:G30").ClearContents
 
-    ' æœ€æ–°ãƒ‡ãƒ¼ã‚¿ã‹ã‚‰é™é †ã§è¡¨ç¤º
+    ' ÅVƒf[ƒ^‚©‚ç~‡‚Å•\¦
     For i = lastRow To startRow Step -1
-        ws.Cells(targetRow, 2).Value = wsOrder.Cells(i, 2).Value  ' æ™‚åˆ»
-        ws.Cells(targetRow, 3).Value = wsOrder.Cells(i, 5).Value  ' éŠ˜æŸ„
-        ws.Cells(targetRow, 4).Value = wsOrder.Cells(i, 4).Value  ' å‹•ä½œ
-        ws.Cells(targetRow, 5).Value = wsOrder.Cells(i, 6).Value  ' æ•°é‡
-        ws.Cells(targetRow, 6).Value = wsOrder.Cells(i, 11).Value ' ä¾¡æ ¼
-        ws.Cells(targetRow, 7).Value = wsOrder.Cells(i, 10).Value ' çŠ¶æ…‹
+        ws.Cells(targetRow, 2).Value = wsOrder.Cells(i, 2).Value  ' 
+        ws.Cells(targetRow, 3).Value = wsOrder.Cells(i, 5).Value  ' –Á•¿
+        ws.Cells(targetRow, 4).Value = wsOrder.Cells(i, 4).Value  ' “®ì
+        ws.Cells(targetRow, 5).Value = wsOrder.Cells(i, 6).Value  ' ”—Ê
+        ws.Cells(targetRow, 6).Value = wsOrder.Cells(i, 11).Value ' ‰¿Ši
+        ws.Cells(targetRow, 7).Value = wsOrder.Cells(i, 10).Value ' ó‘Ô
         targetRow = targetRow + 1
     Next i
 End Sub
 
 ' ========================================
-' å†èª­è¾¼ï¼ˆè¨­å®šãƒªãƒ­ãƒ¼ãƒ‰ï¼‰
+' Ä“Çiİ’èƒŠƒ[ƒhj
 ' ========================================
 Sub ReloadConfiguration()
-    MsgBox "è¨­å®šã‚’å†èª­è¾¼ã—ã¾ã—ãŸ", vbInformation, "Kabuto Auto Trader"
+    MsgBox "İ’è‚ğÄ“Ç‚µ‚Ü‚µ‚½", vbInformation, "Kabuto Auto Trader"
     Debug.Print "Configuration reloaded"
 End Sub
 
 ' ========================================
-' ãƒ¬ãƒãƒ¼ãƒˆç”Ÿæˆ
+' ƒŒƒ|[ƒg¶¬
 ' ========================================
 Sub GenerateDailyReport()
-    MsgBox "æœ¬æ—¥ã®ãƒ¬ãƒãƒ¼ãƒˆã‚’ç”Ÿæˆã—ã¾ã™ï¼ˆæœªå®Ÿè£…ï¼‰", vbInformation, "Kabuto Auto Trader"
-    ' TODO: æ—¥æ¬¡ãƒ¬ãƒãƒ¼ãƒˆç”Ÿæˆãƒ­ã‚¸ãƒƒã‚¯
+    MsgBox "–{“ú‚ÌƒŒƒ|[ƒg‚ğ¶¬‚µ‚Ü‚·i–¢À‘•j", vbInformation, "Kabuto Auto Trader"
+    ' TODO: “úŸƒŒƒ|[ƒg¶¬ƒƒWƒbƒN
 End Sub

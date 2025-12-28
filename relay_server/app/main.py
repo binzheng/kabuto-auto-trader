@@ -178,10 +178,13 @@ if __name__ == "__main__":
 
     settings = get_settings()
 
+    # SQLite does not support multi-process writes safely.
+    workers = 1 if settings.database.url.startswith("sqlite") else settings.server.workers
+
     uvicorn.run(
         "app.main:app",
         host=settings.server.host,
         port=settings.server.port,
         reload=settings.server.debug,
-        workers=1 if settings.server.debug else settings.server.workers
+        workers=1 if settings.server.debug else workers
     )

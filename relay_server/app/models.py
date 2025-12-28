@@ -161,7 +161,7 @@ class Blacklist(Base):
     added_by = Column(String(50), default="auto")
 
     # Metadata
-    metadata = Column(JSON)
+    metadata_json = Column("metadata", JSON)
 
     def __repr__(self):
         return f"<Blacklist(ticker='{self.ticker}', type='{self.blacklist_type}', reason='{self.reason}')>"
