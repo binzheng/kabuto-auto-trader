@@ -15,12 +15,22 @@ Kabuto Auto Traderは、TradingViewのアラートから楽天証券MarketSpeed 
 
 ### 主な特徴
 
+#### 🤖 自動売買システム
 - ✅ **完全自動化**: TradingView → Relay Server → Excel VBA → MarketSpeed II RSS
 - 🛡️ **6層防御機構**: パラメータ検証、リスク管理、二重下单防止、時間外防止
 - 🚨 **Kill Switch**: 5連続損失、日次損失-5万円、異常頻度で自動停止
 - 📊 **包括的ログ**: 6種類のログシート、90日自動アーカイブ
 - 🔔 **Slack/Email通知**: 4レベル（INFO/WARNING/ERROR/CRITICAL）、頻度制限
 - 📈 **リアルタイム監視**: Dashboard、約定ポーリング、Heartbeat
+
+#### 📊 データ分析・バックテスト環境 ⭐ **新規**
+- 🔍 **実トレード分析**: ExecutionLogから勝率、PF、シャープレシオ等を計算
+- 🚀 **完全バックテスト**: OHLCVデータから独立したバックテスト実行
+- 📈 **テクニカル指標**: EMA, RSI, ATR, 出来高等の自動計算
+- 🎯 **シグナル生成**: Kabuto戦略ルールに基づくエントリー/エグジット
+- ⚡ **K線シミュレーション**: Look-ahead bias回避、手数料・スリッページ考慮
+- 📋 **詳細レポート**: 年利、月次分布、ドローダウン詳細、連勝/連敗
+- 🔧 **パラメータ最適化**: 実トレード結果から最適パラメータ推奨
 
 ---
 
@@ -66,6 +76,16 @@ Kabuto Auto Traderは、TradingViewのアラートから楽天証券MarketSpeed 
 │  - RSS.ORDER() 関数で自動発注                               │
 │  - 約定状態のポーリング監視                                  │
 └─────────────────────────────────────────────────────────────┘
+
+                         ┌──────────────────────────────────┐
+                         │    Analysis (データ分析) ⭐      │
+                         ├──────────────────────────────────┤
+                         │  • ExecutionLog分析              │
+                         │  • Yahoo Finance OHLCVデータ     │
+                         │  • バックテストエンジン          │
+                         │  • パラメータ最適化              │
+                         │  • Jupyter Notebooks (6個)       │
+                         └──────────────────────────────────┘
 ```
 
 ---
@@ -80,6 +100,7 @@ Kabuto Auto Traderは、TradingViewのアラートから楽天証券MarketSpeed 
 |--------------|------|------|
 | **Relay Server** | ✅ 100% | FastAPI、全エンドポイント、notification.py |
 | **Excel VBA** | ✅ 100% | 8モジュール、127関数、3,878行 |
+| **Analysis (分析)** | ✅ 100% | 10ライブラリ、6 Jupyter Notebooks ⭐ |
 | **設計ドキュメント** | ✅ 100% | 22ファイル完成 |
 
 **Excel VBA モジュール**:
@@ -96,6 +117,29 @@ Kabuto Auto Traderは、TradingViewのアラートから楽天証券MarketSpeed 
 - app/main.py - FastAPI メイン
 - app/routers/ - API エンドポイント
 - app/core/notification.py (354行, 3クラス) ⭐ 新規追加
+
+**Analysis (分析ライブラリ)** ⭐ **新規追加**:
+
+*実トレード分析*:
+- data_loader.py (340行) - Excel/DB読み込み
+- analytics.py (470行) - パフォーマンス分析
+- optimizer.py (410行) - パラメータ最適化
+
+*バックテスト機能*:
+- market_data.py (250行) - OHLCVデータ取得 (Yahoo Finance)
+- data_cleaner.py (400行) - データクリーニング
+- indicators.py (450行) - テクニカルインジケーター
+- signal_generator.py (350行) - シグナル生成
+- backtest_engine.py (480行) - バックテストエンジン
+- backtest_analytics.py (430行) - 詳細レポート
+
+*Jupyter Notebooks*:
+- 01_daily_performance.ipynb - 日次パフォーマンス分析
+- 02_monthly_report.ipynb - 月次レポート
+- 03_trade_analysis.ipynb - 個別トレード分析
+- 04_backtest_simulator.ipynb - バックテストシミュレーター
+- 05_parameter_optimization.ipynb - パラメータ最適化
+- 06_full_backtest.ipynb - 完全バックテスト (Step A〜F)
 
 ### 手動作業: 🟡 73%
 
@@ -437,20 +481,43 @@ kabuto/
 │   ├── requirements.txt
 │   └── .env.example
 │
-└── excel_vba/                         # Excel VBA Client
-    ├── modules/
-    │   ├── Module_Main.bas            # メインループ
-    │   ├── Module_API.bas             # API通信
-    │   ├── Module_RSS.bas             # RSS連携
-    │   ├── Module_SignalProcessor.bas # シグナル処理
-    │   ├── Module_Config.bas          # 設定管理
-    │   ├── Module_OrderManager.bas    # 注文管理
-    │   ├── Module_Logger.bas          # ログ記録（18関数）
-    │   └── Module_Notification.bas    # 通知（15関数）
-    ├── ThisWorkbook.cls               # イベントハンドラ
-    └── sheets/
-        ├── NotificationHistory_sheet_spec.md
-        └── additional_log_sheets_spec.md
+├── excel_vba/                         # Excel VBA Client
+│   ├── modules/
+│   │   ├── Module_Main.bas            # メインループ
+│   │   ├── Module_API.bas             # API通信
+│   │   ├── Module_RSS.bas             # RSS連携
+│   │   ├── Module_SignalProcessor.bas # シグナル処理
+│   │   ├── Module_Config.bas          # 設定管理
+│   │   ├── Module_OrderManager.bas    # 注文管理
+│   │   ├── Module_Logger.bas          # ログ記録（18関数）
+│   │   └── Module_Notification.bas    # 通知（15関数）
+│   ├── ThisWorkbook.cls               # イベントハンドラ
+│   └── sheets/
+│       ├── NotificationHistory_sheet_spec.md
+│       └── additional_log_sheets_spec.md
+│
+└── analysis/                          # データ分析・バックテスト ⭐
+    ├── README.md                      # 分析環境ガイド
+    ├── requirements.txt               # 依存ライブラリ (yfinance含む)
+    │
+    ├── lib/                           # 分析ライブラリ
+    │   ├── data_loader.py             # ExecutionLog読み込み
+    │   ├── analytics.py               # パフォーマンス分析
+    │   ├── optimizer.py               # パラメータ最適化
+    │   ├── market_data.py             # OHLCVデータ取得
+    │   ├── data_cleaner.py            # データクリーニング
+    │   ├── indicators.py              # テクニカルインジケーター
+    │   ├── signal_generator.py        # シグナル生成
+    │   ├── backtest_engine.py         # バックテストエンジン
+    │   └── backtest_analytics.py      # 詳細レポート
+    │
+    └── notebooks/                     # Jupyter Notebooks (6個)
+        ├── 01_daily_performance.ipynb
+        ├── 02_monthly_report.ipynb
+        ├── 03_trade_analysis.ipynb
+        ├── 04_backtest_simulator.ipynb
+        ├── 05_parameter_optimization.ipynb
+        └── 06_full_backtest.ipynb     # 完全バックテスト
 ```
 
 ---
@@ -535,6 +602,34 @@ nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 >> /var/log/kabuto/relay_s
 - **運用する**: doc/22 → doc/22_daily_checklist.md
 - **トラブル対応**: doc/22 (トラブルシューティング)
 
+### データ分析・バックテスト ⭐ **新規**
+
+**メインガイド**: `analysis/README.md`
+
+**Jupyter Notebooks**:
+- **実トレード分析**:
+  - `01_daily_performance.ipynb` - 日次パフォーマンス分析
+  - `02_monthly_report.ipynb` - 月次レポート
+  - `03_trade_analysis.ipynb` - 個別トレード分析
+  - `05_parameter_optimization.ipynb` - パラメータ最適化（Pine Script生成）
+
+- **完全バックテスト**:
+  - `06_full_backtest.ipynb` - OHLCVデータから完全バックテスト（Step A〜F）
+    - Step A: OHLCVデータ取得（Yahoo Finance）
+    - Step B: データクリーニング
+    - Step C: テクニカルインジケーター計算
+    - Step D: シグナル生成
+    - Step E: K線シミュレーション（手数料・スリッページ考慮）
+    - Step F: 詳細レポート（年利、月次分布、DD詳細）
+
+**クイックスタート**:
+```bash
+cd analysis
+pip install -r requirements.txt
+jupyter notebook
+# 06_full_backtest.ipynb を開いてセル実行
+```
+
 ### 実装検証
 
 - `IMPLEMENTATION_VERIFICATION.md` - 実装状況の詳細レポート
@@ -575,6 +670,45 @@ tail -f /var/log/kabuto/relay_server.log
 ? CheckRSSConnection()         ' RSS接続テスト
 ? FetchPendingSignals()        ' シグナル取得テスト
 PollAndProcessSignals          ' ポーリング1回実行
+```
+
+### Analysis 開発 ⭐ **新規**
+
+```bash
+cd analysis
+
+# 依存ライブラリインストール
+pip install -r requirements.txt
+
+# Jupyter Notebook起動
+jupyter notebook
+
+# Python スクリプトでテスト
+python -c "
+from lib.market_data import MarketDataFetcher
+fetcher = MarketDataFetcher()
+df = fetcher.fetch_ohlcv('7203.T', '2024-01-01', '2024-12-31', '1d')
+print(f'データ取得: {len(df)}行')
+"
+```
+
+**バックテストテスト**:
+```python
+# 完全バックテストフロー
+from lib import *
+
+# Step A-F実行
+fetcher = MarketDataFetcher()
+df = fetcher.fetch_ohlcv('7203.T', '2024-01-01', '2024-12-31', '1d')
+cleaner = DataCleaner(df)
+df_clean = cleaner.remove_anomalies().get_cleaned_data()
+ti = TechnicalIndicators(df_clean)
+df_indicators = ti.add_all_kabuto_indicators().get_data()
+sg = SignalGenerator(df_indicators)
+df_signals = sg.generate_entry_signals().apply_risk_filters().get_signals()
+engine = BacktestEngine(initial_capital=1000000)
+results = engine.run(df_signals)
+engine.print_summary(results['summary'])
 ```
 
 ---
@@ -654,16 +788,25 @@ PollAndProcessSignals          ' ポーリング1回実行
 
 ## 📞 サポート
 
+### 自動売買システム
 - **設計書**: `doc/README.md` - 設計書索引
 - **実装状況**: `IMPLEMENTATION_VERIFICATION.md`
 - **運用方法**: `doc/22_daily_operations.md`
 - **チェックリスト**: `doc/22_daily_checklist.md`
 
+### データ分析・バックテスト ⭐
+- **メインガイド**: `analysis/README.md` - 分析環境完全ガイド
+- **実トレード分析**: `analysis/notebooks/01_daily_performance.ipynb`
+- **パラメータ最適化**: `analysis/notebooks/05_parameter_optimization.ipynb`
+- **完全バックテスト**: `analysis/notebooks/06_full_backtest.ipynb`
+
 ---
 
 ## 🎉 クイックスタート
 
-### 最速で動かす（3ステップ）
+このプロジェクトには**2つの主要機能**があります：
+
+### A. 自動売買システム（3ステップ）
 
 #### 1. Relay Server 起動
 
@@ -695,6 +838,78 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 ---
 
-**🚀 Kabuto Auto Trader で安全・確実な自動トレーディングを！**
+### B. データ分析・バックテスト ⭐（2ステップ）
+
+#### 1. 環境セットアップ
+
+```bash
+cd analysis
+pip install -r requirements.txt
+jupyter notebook
+```
+
+#### 2. バックテスト実行
+
+```
+1. 06_full_backtest.ipynb を開く
+2. セルを順番に実行（Shift+Enter）
+3. トヨタ自動車（7203.T）で1年間のバックテスト
+4. 結果レポート & グラフ表示
+```
+
+**実行例（Python）**:
+```python
+from lib import *
+
+# OHLCVデータ取得
+fetcher = MarketDataFetcher()
+df = fetcher.fetch_ohlcv('7203.T', '2024-01-01', '2024-12-31', '1d')
+
+# クリーニング & インジケーター
+cleaner = DataCleaner(df)
+df = cleaner.remove_anomalies().get_cleaned_data()
+ti = TechnicalIndicators(df)
+df = ti.add_all_kabuto_indicators().get_data()
+
+# シグナル生成 & バックテスト
+sg = SignalGenerator(df)
+df = sg.generate_entry_signals().apply_risk_filters().get_signals()
+engine = BacktestEngine(initial_capital=1000000)
+results = engine.run(df)
+
+# レポート表示
+engine.print_summary(results['summary'])
+```
+
+**詳細ガイド**: `analysis/README.md` を参照
+
+---
+
+**🚀 Kabuto Auto Trader で安全・確実な自動トレーディング & データ駆動の戦略改善を！**
+
+---
+
+## 🆕 更新履歴
+
+### 2025-12-27 - データ分析・バックテスト環境追加
+- ✅ 完全バックテスト機能（Step A〜F）
+  - OHLCVデータ取得（Yahoo Finance）
+  - データクリーニング & テクニカルインジケーター
+  - シグナル生成（Kabuto戦略）
+  - バックテストエンジン（K線シミュレーション）
+  - 詳細レポート（年利、月次分布、DD詳細）
+- ✅ 実トレード分析機能
+  - ExecutionLog分析
+  - パフォーマンス指標計算
+  - パラメータ最適化（Pine Script生成）
+- ✅ Jupyter Notebooks（6個）
+- ✅ 分析ライブラリ（10ファイル、2,800+行）
+
+### 2025-12-27 - 通知システム実装
+- ✅ Slack/Email通知（4レベル）
+- ✅ 通知頻度制限
+- ✅ Module_Notification.bas（15関数）
+
+---
 
 最終更新: 2025-12-27

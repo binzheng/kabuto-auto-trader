@@ -24,9 +24,8 @@ ipywidgets>=8.0.0
 sqlalchemy>=2.0.0
 psycopg2-binary>=2.9.0   # PostgreSQL（本番用）
 
-# バックテスト（オプション）
-# backtrader>=1.9.76     # バックテストライブラリ
-# ta-lib>=0.4.0          # テクニカル指標
+# バックテスト
+yfinance>=0.2.0          # 市場データ取得（Yahoo Finance）
 
 # レポート生成
 jinja2>=3.1.0
