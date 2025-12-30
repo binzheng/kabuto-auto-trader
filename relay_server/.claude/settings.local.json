@@ -1,7 +1,16 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(py:*)",
+      "Bash(choco --version:*)",
+      "Bash(scoop --version:*)",
+      "Bash(winget:*)",
+      "Bash(where:*)",
+      "Bash(powershell -Command \"Get-Command py -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source\")",
+      "Bash(powershell -Command \"Test-Path ''C:\\\\Windows\\\\py.exe''\")",
+      "Bash(powershell -Command \"& ''C:\\\\Windows\\\\py.exe'' --version 2>&1\")",
+      "Bash(powershell -Command:*)"
     ]
   }
 }

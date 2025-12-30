@@ -3,6 +3,7 @@ Health and Status API endpoints
 """
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from datetime import datetime, date
 import redis
 
@@ -27,7 +28,7 @@ async def health_check(db: Session = Depends(get_db)):
 
     # Check database
     try:
-        db.execute("SELECT 1")
+        db.execute(text("SELECT 1"))
         db_status = "OK"
     except Exception as e:
         db_status = f"ERROR: {str(e)}"

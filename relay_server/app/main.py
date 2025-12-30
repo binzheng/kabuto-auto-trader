@@ -139,6 +139,9 @@ app.include_router(signals.router, prefix="/api", tags=["Signals"])
 app.include_router(health.router, tags=["Health"])
 app.include_router(admin.router, prefix="/api", tags=["Admin"])
 
+# Also mount heartbeat at root level for convenience
+app.include_router(admin.router, tags=["Heartbeat"], include_in_schema=False)
+
 
 # Root endpoint
 @app.get("/")
