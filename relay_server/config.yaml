@@ -9,12 +9,14 @@ server:
 
 # Security
 security:
-  webhook_secret: "your-webhook-secret-change-this"
-  api_key: "your-api-key-change-this"
-  admin_password: "your-admin-password-change-this"
+  webhook_secret: "JhZd2DaPMxzL69zq_yOllQaMfaOfu-vSPtvtHnQSweY"
+  api_key: "A83b4aZF_r5iflTLtEbiwC5PuI3gn7pGc_R4h8eW_tQ"
+  admin_password: "f5VYAu8lY07HhB5fxb1RhWBldP6lUjjE"
   allowed_ips:
     - "127.0.0.1"
-    - "192.168.1.0/24"  # Adjust to your network
+    - "192.168.0.0/24"  # Adjust to your network
+    - "192.168.0.109/32"  # Adjust to your network
+    - "0.0.0.0/0"  # Allow all IPs (use webhook_secret for security)
 
 # Database
 database:

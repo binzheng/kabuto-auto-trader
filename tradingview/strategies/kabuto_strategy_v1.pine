@@ -3,18 +3,7 @@
 // Kabuto Trading Strategy v1.0
 // 日本株自動売買システム - 低頻度トレンドフォロー戦略
 // ============================================================================
-strategy(
-    title="Kabuto Strategy v1.0",
-    shorttitle="Kabuto",
-    overlay=true,
-    initial_capital=1000000,
-    default_qty_type=strategy.percent_of_equity,
-    default_qty_value=10,
-    commission_type=strategy.commission.percent,
-    commission_value=0.05,
-    slippage=1,
-    process_orders_on_close=false
-)
+strategy("Kabuto Strategy v1.0", "Kabuto", overlay=true, initial_capital=1000000, default_qty_type=strategy.percent_of_equity, default_qty_value=10, commission_type=strategy.commission.percent, commission_value=0.05, slippage=1, process_orders_on_close=false)
 
 // ============================================================================
 // 入力パラメータ
@@ -47,14 +36,14 @@ cooldownAfterLoss = input.int(60, "損切り後待機時間（分）", minval=0,
 
 // --- 時間フィルター（日本時間） ---
 enableMorningSession = input.bool(true, "前場取引", group="時間帯設定")
-morningStart = input.int(930, "前場開始（HHMM）", minval=0, maxval=2359, group="時間帯設定")
-morningEnd = input.int(1120, "前場終了（HHMM）", minval=0, maxval=2359, group="時間帯設定")
+morningStart = input.int(900, "前場開始（HHMM）", minval=0, maxval=2359, group="時間帯設定")
+morningEnd = input.int(1130, "前場終了（HHMM）", minval=0, maxval=2359, group="時間帯設定")
 
 enableAfternoonSession = input.bool(true, "後場取引", group="時間帯設定")
-afternoonStart = input.int(1300, "後場開始（HHMM）", minval=0, maxval=2359, group="時間帯設定")
-afternoonEnd = input.int(1430, "後場終了（HHMM）", minval=0, maxval=2359, group="時間帯設定")
+afternoonStart = input.int(1230, "後場開始（HHMM）", minval=0, maxval=2359, group="時間帯設定")
+afternoonEnd = input.int(1530, "後場終了（HHMM）", minval=0, maxval=2359, group="時間帯設定")
 
-forceCloseTime = input.int(1445, "強制決済時刻（HHMM）", minval=0, maxval=2359, group="時間帯設定")
+forceCloseTime = input.int(1545, "強制決済時刻（HHMM）", minval=0, maxval=2359, group="時間帯設定")
 
 // --- Webhook設定 ---
 webhookPassphrase = input.string("YOUR_SECRET_PASSPHRASE", "Webhook パスフレーズ", group="Webhook設定")
@@ -255,66 +244,25 @@ if strategy.position_size == 0 and strategy.position_size[1] > 0
 
 // エントリーアラート
 if longSignal and actualRrRatio >= minRrRatio
-    alertMessage = '{' +
-        '"action": "buy",' +
-        '"ticker": "' + syminfo.ticker + '",' +
-        '"quantity": 100,' +
-        '"price": "market",' +
-        '"entry_price": ' + str.tostring(entryPrice, "#.##") + ',' +
-        '"stop_loss": ' + str.tostring(stopLossPrice, "#.##") + ',' +
-        '"take_profit": ' + str.tostring(takeProfitPrice, "#.##") + ',' +
-        '"atr": ' + str.tostring(atr, "#.##") + ',' +
-        '"rr_ratio": ' + str.tostring(actualRrRatio, "#.##") + ',' +
-        '"rsi": ' + str.tostring(rsi, "#.##") + ',' +
-        '"timestamp": "' + str.tostring(time) + '",' +
-        '"passphrase": "' + webhookPassphrase + '"' +
-        '}'
-
+    alertMessage = '{"action": "buy","ticker": "' + syminfo.ticker + '","quantity": 100,"price": "market","entry_price": ' + str.tostring(entryPrice, "#.##") + ',"stop_loss": ' + str.tostring(stopLossPrice, "#.##") + ',"take_profit": ' + str.tostring(takeProfitPrice, "#.##") + ',"atr": ' + str.tostring(atr, "#.##") + ',"rr_ratio": ' + str.tostring(actualRrRatio, "#.##") + ',"rsi": ' + str.tostring(rsi, "#.##") + ',"timestamp": "' + str.tostring(time) + '","passphrase": "' + webhookPassphrase + '"}'
     alert(alertMessage, alert.freq_once_per_bar)
 
 // エグジットアラート（損切り）
-if strategy.position_size > 0 and close <= stopLossPrice
-    alertMessage = '{' +
-        '"action": "sell",' +
-        '"ticker": "' + syminfo.ticker + '",' +
-        '"quantity": 100,' +
-        '"price": "market",' +
-        '"exit_reason": "stop_loss",' +
-        '"exit_price": ' + str.tostring(close, "#.##") + ',' +
-        '"timestamp": "' + str.tostring(time) + '",' +
-        '"passphrase": "' + webhookPassphrase + '"' +
-        '}'
-
+// Note: リレーサーバー側でポジション状態を確認
+if not na(stopLossPrice) and close <= stopLossPrice
+    alertMessage = '{"action": "sell","ticker": "' + syminfo.ticker + '","quantity": 100,"price": "market","exit_reason": "stop_loss","exit_price": ' + str.tostring(close, "#.##") + ',"timestamp": "' + str.tostring(time) + '","passphrase": "' + webhookPassphrase + '"}'
     alert(alertMessage, alert.freq_once_per_bar)
 
 // エグジットアラート（利確）
-if strategy.position_size > 0 and close >= takeProfitPrice
-    alertMessage = '{' +
-        '"action": "sell",' +
-        '"ticker": "' + syminfo.ticker + '",' +
-        '"quantity": 100,' +
-        '"price": "market",' +
-        '"exit_reason": "take_profit",' +
-        '"exit_price": ' + str.tostring(close, "#.##") + ',' +
-        '"timestamp": "' + str.tostring(time) + '",' +
-        '"passphrase": "' + webhookPassphrase + '"' +
-        '}'
-
+// Note: リレーサーバー側でポジション状態を確認
+if not na(takeProfitPrice) and close >= takeProfitPrice
+    alertMessage = '{"action": "sell","ticker": "' + syminfo.ticker + '","quantity": 100,"price": "market","exit_reason": "take_profit","exit_price": ' + str.tostring(close, "#.##") + ',"timestamp": "' + str.tostring(time) + '","passphrase": "' + webhookPassphrase + '"}'
     alert(alertMessage, alert.freq_once_per_bar)
 
 // 強制決済アラート
-if strategy.position_size > 0 and isForceCloseTime
-    alertMessage = '{' +
-        '"action": "sell",' +
-        '"ticker": "' + syminfo.ticker + '",' +
-        '"quantity": 100,' +
-        '"price": "market",' +
-        '"exit_reason": "market_close",' +
-        '"exit_price": ' + str.tostring(close, "#.##") + ',' +
-        '"timestamp": "' + str.tostring(time) + '",' +
-        '"passphrase": "' + webhookPassphrase + '"' +
-        '}'
-
+// Note: リレーサーバー側でポジション状態を確認
+if isForceCloseTime
+    alertMessage = '{"action": "sell","ticker": "' + syminfo.ticker + '","quantity": 100,"price": "market","exit_reason": "market_close","exit_price": ' + str.tostring(close, "#.##") + ',"timestamp": "' + str.tostring(time) + '","passphrase": "' + webhookPassphrase + '"}'
     alert(alertMessage, alert.freq_once_per_bar)
 
 // ============================================================================
@@ -327,76 +275,47 @@ plot(emaMedium, "中期EMA", color=color.new(color.blue, 0), linewidth=2)
 plot(emaSlow, "長期EMA", color=color.new(color.purple, 0), linewidth=2)
 
 // --- エントリー/SL/TP ---
-plot(strategy.position_size > 0 ? entryPrice : na, "エントリー",
-     color=color.new(color.blue, 0), linewidth=2, style=plot.style_linebr)
-
-plot(strategy.position_size > 0 ? stopLossPrice : na, "ストップロス",
-     color=color.new(color.red, 0), linewidth=2, style=plot.style_linebr)
-
-plot(strategy.position_size > 0 ? takeProfitPrice : na, "テイクプロフィット",
-     color=color.new(color.green, 0), linewidth=2, style=plot.style_linebr)
+plot(strategy.position_size > 0 ? entryPrice : na, "エントリー", color=color.new(color.blue, 0), linewidth=2, style=plot.style_linebr)
+plot(strategy.position_size > 0 ? stopLossPrice : na, "ストップロス", color=color.new(color.red, 0), linewidth=2, style=plot.style_linebr)
+plot(strategy.position_size > 0 ? takeProfitPrice : na, "テイクプロフィット", color=color.new(color.green, 0), linewidth=2, style=plot.style_linebr)
 
 // --- 取引可能時間帯の背景色 ---
-bgcolor(isSafeTime ? color.new(color.green, 95) : color.new(color.red, 98),
-        title="取引可能時間帯")
+bgcolor(isSafeTime ? color.new(color.green, 95) : color.new(color.red, 98), title="取引可能時間帯")
 
 // --- エントリーシグナルのマーク ---
-plotshape(longSignal and actualRrRatio >= minRrRatio,
-          "買いシグナル",
-          style=shape.triangleup,
-          location=location.belowbar,
-          color=color.new(color.green, 0),
-          size=size.small)
+plotshape(longSignal and actualRrRatio >= minRrRatio, "買いシグナル", style=shape.triangleup, location=location.belowbar, color=color.new(color.green, 0), size=size.small)
 
 // ============================================================================
 // 情報パネル
 // ============================================================================
 
-var table infoPanel = table.new(position.top_right, 2, 10,
-                                 border_width=1,
-                                 border_color=color.gray,
-                                 frame_width=1,
-                                 frame_color=color.gray)
+var table infoPanel = table.new(position.top_right, 2, 10, border_width=1, border_color=color.gray, frame_width=1, frame_color=color.gray)
 
 if barstate.islast
     // ヘッダー
-    table.cell(infoPanel, 0, 0, "Kabuto Strategy",
-               bgcolor=color.new(color.blue, 30),
-               text_color=color.white,
-               text_size=size.normal)
-    table.cell(infoPanel, 1, 0, "v1.0",
-               bgcolor=color.new(color.blue, 30),
-               text_color=color.white)
+    table.cell(infoPanel, 0, 0, "Kabuto Strategy", bgcolor=color.new(color.blue, 30), text_color=color.white, text_size=size.normal)
+    table.cell(infoPanel, 1, 0, "v1.0", bgcolor=color.new(color.blue, 30), text_color=color.white)
 
     // 日次エントリー数
     table.cell(infoPanel, 0, 1, "本日エントリー", text_color=color.white)
     entryColor = dailyEntryCount >= maxDailyEntries ? color.new(color.red, 30) : color.new(color.green, 30)
-    table.cell(infoPanel, 1, 1,
-               str.tostring(dailyEntryCount) + "/" + str.tostring(maxDailyEntries),
-               bgcolor=entryColor,
-               text_color=color.white)
+    table.cell(infoPanel, 1, 1, str.tostring(dailyEntryCount) + "/" + str.tostring(maxDailyEntries), bgcolor=entryColor, text_color=color.white)
 
     // クールダウン状態
     table.cell(infoPanel, 0, 2, "クールダウン", text_color=color.white)
     cooldownStatus = isInCooldown() ? "⏸️" : "✅"
     cooldownColor = isInCooldown() ? color.new(color.red, 30) : color.new(color.green, 30)
-    table.cell(infoPanel, 1, 2, cooldownStatus,
-               bgcolor=cooldownColor,
-               text_color=color.white)
+    table.cell(infoPanel, 1, 2, cooldownStatus, bgcolor=cooldownColor, text_color=color.white)
 
     // 時間帯
     table.cell(infoPanel, 0, 3, "時刻（JST）", text_color=color.white)
-    table.cell(infoPanel, 1, 3,
-               str.tostring(jstHour, "#00") + ":" + str.tostring(jstMinute, "#00"),
-               text_color=color.white)
+    table.cell(infoPanel, 1, 3, str.tostring(jstHour, "#00") + ":" + str.tostring(jstMinute, "#00"), text_color=color.white)
 
     // 取引可能時間
     table.cell(infoPanel, 0, 4, "取引時間", text_color=color.white)
     timeStatus = isSafeTime ? "✅" : "⏸️"
     timeColor = isSafeTime ? color.new(color.green, 30) : color.new(color.red, 30)
-    table.cell(infoPanel, 1, 4, timeStatus,
-               bgcolor=timeColor,
-               text_color=color.white)
+    table.cell(infoPanel, 1, 4, timeStatus, bgcolor=timeColor, text_color=color.white)
 
     // ATR
     table.cell(infoPanel, 0, 5, "ATR(14)", text_color=color.white)
@@ -404,37 +323,27 @@ if barstate.islast
 
     // RSI
     table.cell(infoPanel, 0, 6, "RSI(14)", text_color=color.white)
-    rsiColor = rsi > rsiUpper ? color.new(color.red, 30) :
-               rsi < rsiLower ? color.new(color.orange, 30) :
-               color.new(color.green, 30)
-    table.cell(infoPanel, 1, 6, str.tostring(rsi, "#.##"),
-               bgcolor=rsiColor,
-               text_color=color.white)
+    rsiColor = rsi > rsiUpper ? color.new(color.red, 30) : rsi < rsiLower ? color.new(color.orange, 30) : color.new(color.green, 30)
+    table.cell(infoPanel, 1, 6, str.tostring(rsi, "#.##"), bgcolor=rsiColor, text_color=color.white)
 
     // 出来高倍率
     table.cell(infoPanel, 0, 7, "出来高倍率", text_color=color.white)
     volRatio = volume / volumeAvg
     volColor = volRatio >= volumeMultiplier ? color.new(color.green, 30) : color.new(color.gray, 30)
-    table.cell(infoPanel, 1, 7, str.tostring(volRatio, "#.##") + "x",
-               bgcolor=volColor,
-               text_color=color.white)
+    table.cell(infoPanel, 1, 7, str.tostring(volRatio, "#.##") + "x", bgcolor=volColor, text_color=color.white)
 
     // ポジション状態
     table.cell(infoPanel, 0, 8, "ポジション", text_color=color.white)
     posStatus = strategy.position_size > 0 ? "保有中" : "なし"
     posColor = strategy.position_size > 0 ? color.new(color.blue, 30) : color.new(color.gray, 30)
-    table.cell(infoPanel, 1, 8, posStatus,
-               bgcolor=posColor,
-               text_color=color.white)
+    table.cell(infoPanel, 1, 8, posStatus, bgcolor=posColor, text_color=color.white)
 
     // 総合判定
     table.cell(infoPanel, 0, 9, "取引可否", text_color=color.white)
     canTrade = allRiskChecksPassed and strategy.position_size == 0
     tradeStatus = canTrade ? "✅" : "⏸️"
     tradeColor = canTrade ? color.new(color.green, 30) : color.new(color.red, 30)
-    table.cell(infoPanel, 1, 9, tradeStatus,
-               bgcolor=tradeColor,
-               text_color=color.white)
+    table.cell(infoPanel, 1, 9, tradeStatus, bgcolor=tradeColor, text_color=color.white)
 
 // ============================================================================
 // クールダウン表示（チャート上）
@@ -444,11 +353,7 @@ var label cooldownLabel = na
 if barstate.islast and isInCooldown()
     reason = getCooldownReason()
     if na(cooldownLabel)
-        cooldownLabel := label.new(bar_index, high * 1.01, reason,
-                                    style=label.style_label_down,
-                                    color=color.new(color.red, 20),
-                                    textcolor=color.white,
-                                    size=size.normal)
+        cooldownLabel := label.new(bar_index, high * 1.01, reason, style=label.style_label_down, color=color.new(color.red, 20), textcolor=color.white, size=size.normal)
     else
         label.set_xy(cooldownLabel, bar_index, high * 1.01)
         label.set_text(cooldownLabel, reason)

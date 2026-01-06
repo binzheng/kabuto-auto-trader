@@ -78,7 +78,7 @@ class DeduplicationService:
                 self.redis_client.setex(
                     idempotency_key,
                     self.idempotency_ttl,
-                    json.dumps(response_data)
+                    json.dumps(response_data, default=str)
                 )
             else:
                 self.redis_client.setex(

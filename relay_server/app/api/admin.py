@@ -3,6 +3,7 @@ Admin API endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from typing import Optional
 
 from app.database import get_db
 from app.schemas import KillSwitchRequest, KillSwitchResponse, HeartbeatRequest, HeartbeatResponse
@@ -10,6 +11,7 @@ from app.models import Heartbeat
 from app.core.config import get_settings
 from app.core.logging import logger
 from app.services.kill_switch import KillSwitchService
+from app.services.cooldown import CooldownService
 from datetime import datetime
 
 router = APIRouter()
@@ -130,4 +132,63 @@ async def get_all_heartbeats(db: Session = Depends(get_db)):
         "status": "success",
         "count": len(result),
         "heartbeats": result
+    }
+
+
+@router.get("/admin/cooldowns")
+async def get_all_cooldowns():
+    """
+    Get all active cooldowns with remaining time
+
+    Returns list of active cooldowns with TTL
+    """
+    cooldown_service = CooldownService()
+    cooldowns = cooldown_service.get_all_cooldowns()
+
+    result = []
+    for key, ttl in cooldowns.items():
+        # Parse key format: cooldown:action:ticker
+        parts = key.split(":")
+        if len(parts) >= 3:
+            result.append({
+                "key": key,
+                "action": parts[1],
+                "ticker": parts[2],
+                "remaining_seconds": ttl,
+                "remaining_minutes": round(ttl / 60, 1)
+            })
+
+    return {
+        "status": "success",
+        "count": len(result),
+        "cooldowns": result
+    }
+
+
+@router.delete("/admin/cooldowns")
+async def reset_cooldown(
+    ticker: Optional[str] = "*",
+    action: Optional[str] = "*"
+):
+    """
+    Reset cooldown for specific ticker/action or all
+
+    Parameters:
+    - ticker: Stock ticker or "*" for all (default: "*")
+    - action: "buy", "sell", or "*" for all (default: "*")
+
+    Examples:
+    - DELETE /admin/cooldowns?ticker=8306&action=buy  (reset specific)
+    - DELETE /admin/cooldowns?action=buy              (reset all buy cooldowns)
+    - DELETE /admin/cooldowns                         (reset all cooldowns)
+    """
+    cooldown_service = CooldownService()
+    cooldown_service.reset_cooldown(ticker, action)
+
+    logger.info(f"Cooldown reset: ticker={ticker}, action={action}")
+
+    return {
+        "status": "success",
+        "message": f"Cooldown reset for ticker={ticker}, action={action}",
+        "timestamp": datetime.now()
     }
