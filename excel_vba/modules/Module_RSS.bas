@@ -21,7 +21,7 @@ Function SafeExecuteOrder(signal As Dictionary) As String
 
     ' === Step 1: パラメータ構築 ===
     orderParams("ticker") = signal("ticker")
-    orderParams("side") = IIf(signal("action") = "buy", 1, 2)
+    orderParams("side") = IIf(signal("action") = "buy", 3, 1)  ' 3=現物買, 1=現物売
     orderParams("quantity") = CLng(signal("quantity"))
     orderParams("priceType") = 0  ' 成行固定
     orderParams("price") = 0      ' 成行なので0
@@ -63,21 +63,39 @@ Function SafeExecuteOrder(signal As Dictionary) As String
     ' === Step 4: 監査ログ記録（発注前） ===
     Call LogOrderAttempt(signal("signal_id"), orderParams)
 
-    ' === Step 5: RSS.ORDER() 実行 ===
+    ' === Step 5: RssStockOrder_v() 実行 ===
+    ' 発注ID生成
+    Dim orderId As String
+    orderId = "ORD_" & Format(Now, "yyyymmddhhnnss") & "_" & Right("000" & signal("signal_id"), 6)
+
     Dim rssResult As Variant
-    rssResult = Application.Run("RSS.ORDER", _
-        orderParams("ticker"), _
-        orderParams("side"), _
-        orderParams("quantity"), _
-        orderParams("priceType"), _
-        orderParams("price"), _
-        orderParams("condition") _
+    rssResult = Application.Run("RssStockOrder_v", _
+        orderId, _                              ' 1. 発注ID
+        0, _                                    ' 2. 発注トリガー(0=即時)
+        orderParams("ticker"), _                ' 3. 銘柄コード
+        orderParams("side"), _                  ' 4. 売買区分(3=現物買, 1=現物売)
+        orderParams("quantity"), _              ' 5. 発注株数
+        orderParams("priceType"), _             ' 6. 成行指値区分(0=成行)
+        orderParams("price"), _                 ' 7. 指値(成行は0)
+        orderParams("condition"), _             ' 8. 執行条件(0=なし)
+        0, _                                    ' 9. 注文期限区分(0=当日のみ)
+        0, _                                    ' 10. 注文期限年月日時分(0)
+        0, _                                    ' 11. 寄成条件(0=なし)
+        0, _                                    ' 12. 引成条件(0=なし)
+        0, _                                    ' 13. 逆指値トリガー値(0=なし)
+        0, _                                    ' 14. 逆指値執行指値価格(0)
+        0, _                                    ' 15. 逆指値執行条件(0=なし)
+        "", _                                   ' 16. OCO発注ID(なし)
+        "", _                                   ' 17. IFD発注ID(なし)
+        "", _                                   ' 18. 連続注文番号(なし)
+        2, _                                    ' 19. 口座区分(2=特定)
+        0 _                                     ' 20. 預り区分(0=通常)
     )
 
     ' === Step 6: 結果判定 ===
     If IsError(rssResult) Then
-        Debug.Print "RSS.ORDER returned Error"
-        Call LogError("RSS_ERROR", "SafeExecuteOrder", "RSS.ORDER returned error", orderParams("ticker"), "CRITICAL")
+        Debug.Print "RssStockOrder_v returned Error"
+        Call LogError("RSS_ERROR", "SafeExecuteOrder", "RssStockOrder_v returned error", orderParams("ticker"), "CRITICAL")
 
         SafeExecuteOrder = ""
         Exit Function
@@ -86,18 +104,16 @@ Function SafeExecuteOrder(signal As Dictionary) As String
     Dim resultStr As String
     resultStr = CStr(rssResult)
 
-    If InStr(resultStr, "注文番号:") > 0 Then
+    ' RssStockOrder_vは成功コードを返す (0=成功)
+    If rssResult = 0 Then
         ' 成功
-        Dim orderId As String
-        orderId = Mid(resultStr, InStr(resultStr, ":") + 1)
-
         Debug.Print "Order SUCCESS: " & orderId
 
         ' 監査ログ記録（成功）
         Call LogOrderSuccess(signal("signal_id"), orderParams, orderId)
 
         ' カウンター更新
-        If orderParams("side") = 1 Then  ' 買い
+        If orderParams("side") = 3 Then  ' 買い(3=現物買)
             Dim currentCount As Long
             currentCount = CLng(GetSystemState("daily_entry_count"))
             Call SetSystemState("daily_entry_count", currentCount + 1)
@@ -106,7 +122,7 @@ Function SafeExecuteOrder(signal As Dictionary) As String
         SafeExecuteOrder = orderId
     Else
         ' RSS側エラー
-        Debug.Print "RSS.ORDER failed: " & resultStr
+        Debug.Print "RssStockOrder_v failed: " & resultStr
         Call LogError("RSS_ERROR", "SafeExecuteOrder", resultStr, orderParams("ticker"), "ERROR")
 
         SafeExecuteOrder = ""
@@ -174,7 +190,7 @@ Function CanExecuteOrder(orderParams As Dictionary) As Dictionary
     result("checks")("daily_limits") = "OK"
 
     ' === Level 5: リスク制限チェック ===
-    If orderParams("side") = 1 Then  ' 買いの場合
+    If orderParams("side") = 3 Then  ' 買いの場合(3=現物買)
         Dim riskCheck As Dictionary
         Set riskCheck = CheckRiskLimits(orderParams("ticker"), orderParams("quantity"))
 
@@ -337,14 +353,14 @@ Function ValidateSide(side As Integer, ticker As String) As Dictionary
     Set result("errors") = New Collection
 
     ' 1. 値範囲チェック
-    If side <> 1 And side <> 2 Then
-        result("errors").Add "売買区分は1（買）または2（売）のみ: " & side
+    If side <> 3 And side <> 1 Then
+        result("errors").Add "売買区分は3（現物買）または1（現物売）のみ: " & side
         Set ValidateSide = result
         Exit Function
     End If
 
     ' 2. 売りの場合はポジション確認
-    If side = 2 Then  ' 売り
+    If side = 1 Then  ' 売り(1=現物売)
         If Not HasPosition(ticker) Then
             result("errors").Add "ポジションなしで売り注文: " & ticker
             Set ValidateSide = result
@@ -405,7 +421,7 @@ Function ValidateQuantity(quantity As Long, ticker As String, side As Integer) A
     End If
 
     ' 4. 売りの場合は保有数量チェック
-    If side = 2 Then  ' 売り
+    If side = 1 Then  ' 売り(1=現物売)
         Dim availableQty As Long
         availableQty = GetAvailableQuantity(ticker)
 
@@ -417,7 +433,7 @@ Function ValidateQuantity(quantity As Long, ticker As String, side As Integer) A
     End If
 
     ' 5. 金額上限チェック（買いの場合）
-    If side = 1 Then  ' 買い
+    If side = 3 Then  ' 買い(3=現物買)
         Dim currentPrice As Double
         currentPrice = GetCurrentPrice(ticker)
 
@@ -586,7 +602,7 @@ Function CheckDailyLimits(side As Integer) As Boolean
     Dim maxDailyEntries As Long
     maxDailyEntries = CLng(GetConfig("MAX_DAILY_ENTRIES"))
 
-    If side = 1 Then  ' 買い
+    If side = 3 Then  ' 買い(3=現物買)
         If dailyEntryCount >= maxDailyEntries Then
             Debug.Print "Daily entry limit exceeded: " & dailyEntryCount & " >= " & maxDailyEntries
             CheckDailyLimits = False
@@ -609,7 +625,7 @@ Function DoubleCheckOrder(orderParams As Dictionary) As Boolean
 
     ' 1. パラメータ再確認
     checkLog = checkLog & "Ticker: " & orderParams("ticker") & vbCrLf
-    checkLog = checkLog & "Side: " & IIf(orderParams("side") = 1, "BUY", "SELL") & vbCrLf
+    checkLog = checkLog & "Side: " & IIf(orderParams("side") = 3, "BUY", "SELL") & vbCrLf
     checkLog = checkLog & "Quantity: " & orderParams("quantity") & vbCrLf
     checkLog = checkLog & "Type: " & IIf(orderParams("priceType") = 0, "MARKET", "LIMIT") & vbCrLf
 
@@ -646,7 +662,7 @@ Function DoubleCheckOrder(orderParams As Dictionary) As Boolean
     End If
 
     ' 5. 売りの場合はポジション再確認
-    If orderParams("side") = 2 Then  ' 売り
+    If orderParams("side") = 1 Then  ' 売り(1=現物売)
         Dim availableQty As Long
         availableQty = GetAvailableQuantity(orderParams("ticker"))
 
@@ -767,7 +783,7 @@ Sub LogOrderAttempt(signalId As String, orderParams As Dictionary)
     ws.Cells(lastRow, 4).Value = "SafeExecuteOrder"
     ws.Cells(lastRow, 5).Value = orderParams("ticker")
     ws.Cells(lastRow, 6).Value = signalId
-    ws.Cells(lastRow, 7).Value = "Attempting order: " & IIf(orderParams("side") = 1, "BUY", "SELL") & " " & orderParams("quantity")
+    ws.Cells(lastRow, 7).Value = "Attempting order: " & IIf(orderParams("side") = 3, "BUY", "SELL") & " " & orderParams("quantity")
 End Sub
 
 Sub LogOrderSuccess(signalId As String, orderParams As Dictionary, orderId As String)
@@ -785,7 +801,7 @@ Sub LogOrderSuccess(signalId As String, orderParams As Dictionary, orderId As St
     ws.Cells(lastRow, 4).Value = "SafeExecuteOrder"
     ws.Cells(lastRow, 5).Value = orderParams("ticker")
     ws.Cells(lastRow, 6).Value = signalId
-    ws.Cells(lastRow, 7).Value = "Order success: " & orderId & " | " & IIf(orderParams("side") = 1, "BUY", "SELL") & " " & orderParams("quantity")
+    ws.Cells(lastRow, 7).Value = "Order success: " & orderId & " | " & IIf(orderParams("side") = 3, "BUY", "SELL") & " " & orderParams("quantity")
     ws.Cells(lastRow, 9).Value = "INFO"
 End Sub
 
@@ -954,10 +970,10 @@ Function GetCurrentPrice(ticker As String) As Double
     On Error GoTo ErrorHandler
 
     Dim result As Variant
-    result = Application.Run("RSS.PRICE", ticker)
+    result = Application.Run("RssMarket", ticker, "現在値")
 
     If IsError(result) Then
-        Debug.Print "RSS.PRICE Error for ticker: " & ticker
+        Debug.Print "RssMarket Error for ticker: " & ticker
         GetCurrentPrice = 0
         Exit Function
     End If
@@ -971,10 +987,10 @@ ErrorHandler:
 End Function
 
 Function GetReferencePrice(ticker As String) As Double
-    ' 前日終値を取得（RSS.PREV_CLOSEまたはキャッシュ）
+    ' 前日終値を取得（RssMarketまたはキャッシュ）
     On Error Resume Next
     Dim refPrice As Variant
-    refPrice = Application.Run("RSS.PREV_CLOSE", ticker)
+    refPrice = Application.Run("RssMarket", ticker, "前日終値")
 
     If IsError(refPrice) Or refPrice <= 0 Then
         GetReferencePrice = 0
@@ -987,7 +1003,7 @@ Function GetTickerName(ticker As String) As String
     On Error GoTo ErrorHandler
 
     Dim result As Variant
-    result = Application.Run("RSS.NAME", ticker)
+    result = Application.Run("RssMarket", ticker, "銘柄名称")
 
     If IsError(result) Or result = "" Then
         ' フォールバック: 静的マッピング
@@ -1023,7 +1039,7 @@ Function CheckRSSConnection() As Boolean
     testTicker = "9984"  ' SoftBank Group
 
     Dim result As Variant
-    result = Application.Run("RSS.PRICE", testTicker)
+    result = Application.Run("RssMarket", testTicker, "現在値")
 
     If IsError(result) Then
         CheckRSSConnection = False
@@ -1061,12 +1077,12 @@ Sub PollOrderStatus(internalId As String)
 
     If rssOrderId = "" Then Exit Sub
 
-    ' RSS.STATUS関数で注文状態照会
+    ' RssOrderStatus関数で注文状態照会
     Dim result As Variant
-    result = Application.Run("RSS.STATUS", rssOrderId)
+    result = Application.Run("RssOrderStatus", rssOrderId)
 
     If IsError(result) Then
-        Debug.Print "RSS.STATUS Error for order: " & internalId
+        Debug.Print "RssOrderStatus Error for order: " & internalId
         Exit Sub
     End If
 

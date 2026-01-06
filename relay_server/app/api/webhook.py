@@ -9,13 +9,14 @@ import json
 
 from app.database import get_db
 from app.schemas import WebhookSignal, WebhookResponse, ErrorResponse
-from app.models import Signal, SignalState
+from app.models import Signal, SignalState, Position
 from app.core.config import get_settings
 from app.core.logging import log_signal_received, log_risk_violation, logger
 from app.services.deduplication import DeduplicationService
 from app.services.cooldown import CooldownService
 from app.services.market_hours import MarketHoursService
 from app.services.risk_control import RiskControlService
+from app.services.csv_logger import CSVLoggerService
 
 router = APIRouter()
 
@@ -109,10 +110,29 @@ async def receive_webhook(
             detail=f"Cooldown active: {cooldown_result['reason']}, retry after {cooldown_result['retry_after']}s"
         )
 
-    # 6. Generate checksum
+    # 6. Position check for sell signals
+    # TradingViewは内部ポジション状態を知らないため、リレーサーバー側で実際のポジションを確認
+    if signal.action == "sell":
+        position = db.query(Position).filter(Position.ticker == signal.ticker).first()
+        if not position:
+            logger.warning(f"Sell signal rejected: No position for {signal.ticker}")
+            log_risk_violation("no_position_to_sell", signal.ticker)
+            raise HTTPException(
+                status_code=400,
+                detail=f"Cannot sell {signal.ticker}: No position held"
+            )
+        elif position.quantity < signal.quantity:
+            logger.warning(f"Sell signal rejected: Insufficient position for {signal.ticker} (have {position.quantity}, trying to sell {signal.quantity})")
+            log_risk_violation("insufficient_position", signal.ticker)
+            raise HTTPException(
+                status_code=400,
+                detail=f"Cannot sell {signal.quantity} shares of {signal.ticker}: Only {position.quantity} shares held"
+            )
+
+    # 7. Generate checksum
     checksum = generate_checksum(signal, signal_id)
 
-    # 7. Create signal in database
+    # 8. Create signal in database
     expires_at = datetime.now() + timedelta(minutes=settings.signal.expiration_minutes)
 
     db_signal = Signal(
@@ -137,10 +157,31 @@ async def receive_webhook(
     db.commit()
     db.refresh(db_signal)
 
-    # 8. Set cooldown
+    # 9. Log to CSV file
+    csv_logger = CSVLoggerService()
+    csv_logger.log_signal(
+        signal_data={
+            "signal_id": signal_id,
+            "action": signal.action,
+            "ticker": signal.ticker,
+            "quantity": signal.quantity,
+            "price": signal.price,
+            "entry_price": signal.entry_price,
+            "stop_loss": signal.stop_loss,
+            "take_profit": signal.take_profit,
+            "atr": signal.atr,
+            "rr_ratio": signal.rr_ratio,
+            "rsi": signal.rsi,
+            "checksum": checksum,
+            "state": SignalState.PENDING.value
+        },
+        source_ip=request.client.host
+    )
+
+    # 10. Set cooldown
     cooldown_service.set_cooldown(signal.ticker, signal.action)
 
-    # 9. Log signal received
+    # 11. Log signal received
     log_signal_received(
         signal_id=signal_id,
         ticker=signal.ticker,
@@ -149,7 +190,7 @@ async def receive_webhook(
         entry_price=signal.entry_price
     )
 
-    # 10. Prepare response
+    # 12. Prepare response
     response_data = {
         "status": "success",
         "signal_id": signal_id,
