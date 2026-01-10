@@ -1,0 +1,145 @@
+//@version=5
+// ============================================================================
+// Webhook 疎通テスト用ストラテジー
+// TradingView → Relay Server の接続確認用
+// ============================================================================
+strategy("Webhook Test", "WebhookTest", overlay=true, initial_capital=1000000)
+
+// ============================================================================
+// 設定
+// ============================================================================
+
+// テスト銘柄
+testTicker = input.string("9984", "テスト銘柄コード", group="テスト設定")
+
+// Webhook パスフレーズ（relay_server/config.yaml の security.webhook_secret と一致させる）
+webhookPassphrase = input.string("JhZd2DaPMxzL69zq_yOllQaMfaOfu-vSPtvtHnQSweY", "Webhook パスフレーズ", group="テスト設定")
+
+// ============================================================================
+// テストロジック
+// ============================================================================
+
+// 前回送信時刻（ミリ秒）
+var int lastSendTime = 0
+
+// 送信回数カウンター
+var int sendCount = 0
+
+// 送信間隔（ミリ秒） - 1分 = 60000ms
+sendIntervalMs = 60000
+
+// アラート用変数（TradingViewのアラートメッセージで使用）
+var float testEntryPrice = na
+var float testStopLoss = na
+var float testTakeProfit = na
+var float testAtr = na
+var float testRrRatio = na
+var float testRsi = na
+
+// 前回送信からの経過時間
+timeSinceLastSend = time - lastSendTime
+
+// 1分ごとにテストシグナルを生成（初回は即座に送信）
+testSignal = barstate.isrealtime and barstate.islast and (lastSendTime == 0 or timeSinceLastSend >= sendIntervalMs)
+
+// デバッグログ（毎バー）
+if barstate.islast
+    log.info("📊 Debug: isRealtime=" + str.tostring(barstate.isrealtime) + " | islast=" + str.tostring(barstate.islast) + " | lastSend=" + str.tostring(lastSendTime) + " | elapsed=" + str.tostring(timeSinceLastSend / 1000) + "s | signal=" + str.tostring(testSignal))
+
+if testSignal
+    // テスト注文を実行
+    strategy.entry("TestBuy", strategy.long, qty=100)
+
+    // テスト用のエントリー価格とSL/TP（ダミー値）を計算
+    testEntryPrice := close
+    testStopLoss := close * 0.95  // -5%
+    testTakeProfit := close * 1.10  // +10%
+    testAtr := close * 0.02  // 2%
+    testRrRatio := (testTakeProfit - testEntryPrice) / (testEntryPrice - testStopLoss)
+    testRsi := 60.0
+
+    // 変数を公開（TradingViewのアラートメッセージで使用可能）
+    // alertMessage変数は不要になりました（TradingViewのアラート設定で直接JSONを記述）
+
+    // 送信時刻を記録
+    lastSendTime := time
+    sendCount := sendCount + 1
+
+    // 詳細ログ出力
+    log.info("============================================================")
+    log.info("🔔 Webhook送信 #" + str.tostring(sendCount))
+    log.info("📍 銘柄: " + testTicker + " @ ¥" + str.tostring(testEntryPrice, "#.##"))
+    log.info("⏰ 送信時刻: " + str.tostring(year) + "-" + str.tostring(month, "#00") + "-" + str.tostring(dayofmonth, "#00") + " " + str.tostring(hour, "#00") + ":" + str.tostring(minute, "#00") + ":" + str.tostring(second, "#00"))
+    log.info("📊 データ: SL=" + str.tostring(testStopLoss, "#.##") + " | TP=" + str.tostring(testTakeProfit, "#.##") + " | RR=" + str.tostring(testRrRatio, "#.##"))
+    log.info("============================================================")
+    log.info("⚠️ アラートメッセージはTradingViewのアラート設定で設定してください")
+    log.info("   アラートパネル → アラート編集 → メッセージ")
+
+// テストポジションを即座に決済（チャートを汚さないため）
+// alert_messageを指定しないことで、Webhookアラートを送信しない
+if strategy.position_size > 0
+    strategy.close("TestBuy", comment="テスト終了", alert_message="")
+
+// ============================================================================
+// チャート表示
+// ============================================================================
+
+// テストシグナル発生時の背景色
+bgcolor(testSignal ? color.new(color.green, 90) : na, title="テスト送信中")
+
+// テストシグナルのマーク
+plotshape(testSignal, "テストシグナル", style=shape.triangleup, location=location.belowbar, color=color.new(color.blue, 0), size=size.large)
+
+// 情報パネル
+var table infoPanel = table.new(position.top_right, 2, 8, border_width=1, border_color=color.gray, frame_width=1, frame_color=color.gray)
+
+if barstate.islast
+    table.cell(infoPanel, 0, 0, "Webhook Test", bgcolor=color.new(color.blue, 30), text_color=color.white, text_size=size.normal)
+    table.cell(infoPanel, 1, 0, "v1.0", bgcolor=color.new(color.blue, 30), text_color=color.white)
+
+    table.cell(infoPanel, 0, 1, "銘柄", text_color=color.white)
+    table.cell(infoPanel, 1, 1, testTicker, text_color=color.white)
+
+    table.cell(infoPanel, 0, 2, "テスト状態", text_color=color.white)
+    timeUntilNext = lastSendTime > 0 ? math.max(0, sendIntervalMs - timeSinceLastSend) / 1000 : 0
+    testStatus = lastSendTime > 0 ? "次回: " + str.tostring(math.round(timeUntilNext)) + "秒後" : "⏳ 待機中"
+    testColor = lastSendTime > 0 ? color.new(color.green, 30) : color.new(color.orange, 30)
+    table.cell(infoPanel, 1, 2, testStatus, bgcolor=testColor, text_color=color.white)
+
+    table.cell(infoPanel, 0, 3, "送信回数", text_color=color.white)
+    table.cell(infoPanel, 1, 3, str.tostring(sendCount) + " 回", text_color=color.white)
+
+    table.cell(infoPanel, 0, 4, "現在価格", text_color=color.white)
+    table.cell(infoPanel, 1, 4, str.tostring(close, "#.##"), text_color=color.white)
+
+    table.cell(infoPanel, 0, 5, "Passphrase", text_color=color.white)
+    passphraseDisplay = str.length(webhookPassphrase) > 8 ? str.substring(webhookPassphrase, 0, 8) + "..." : webhookPassphrase
+    table.cell(infoPanel, 1, 5, passphraseDisplay, text_color=color.new(color.yellow, 0))
+
+    // デバッグ情報
+    table.cell(infoPanel, 0, 6, "リアルタイム", text_color=color.white)
+    realtimeStatus = barstate.isrealtime ? "✅ YES" : "⏳ NO (待機中)"
+    realtimeColor = barstate.isrealtime ? color.new(color.green, 30) : color.new(color.red, 30)
+    table.cell(infoPanel, 1, 6, realtimeStatus, bgcolor=realtimeColor, text_color=color.white)
+
+    table.cell(infoPanel, 0, 7, "経過時間", text_color=color.white)
+    elapsedSeconds = timeSinceLastSend / 1000
+    table.cell(infoPanel, 1, 7, str.tostring(math.round(elapsedSeconds)) + "秒", text_color=color.white)
+
+// ============================================================================
+// 使い方
+// ============================================================================
+// 1. TradingViewでこのストラテジーをチャートに追加
+// 2. 設定で「Webhook パスフレーズ」をrelay_serverのconfig.yamlと一致させる
+// 3. アラートを作成:
+//    - 条件: "Webhook Test"
+//    - オプション: "注文約定時"
+//    - Webhook URL: https://YOUR-RELAY-SERVER/webhook/test
+//    - メッセージ: {{strategy.order.alert_message}}
+// 4. リアルタイムバーで自動的にWebhookが1分ごとに送信されます
+// 5. relay_serverのログで受信を確認
+// 6. 情報パネルで送信状態を確認:
+//    - テスト状態: 次回送信までのカウントダウン
+//    - 送信回数: 累積送信回数
+// 7. テストを停止する場合は、ストラテジーを削除
+// ============================================================================
