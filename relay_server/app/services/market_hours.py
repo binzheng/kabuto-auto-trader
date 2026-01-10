@@ -152,7 +152,7 @@ class MarketHoursService:
             return {
                 "accept": False,
                 "reason": "post_market",
-                "action": "REJECT"  # Too late for today
+                "action": self.config.off_hours_action  # Use config setting
             }
 
         # Auction periods - reject to avoid volatility

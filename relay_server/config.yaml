@@ -63,11 +63,11 @@ market_hours:
   safe_trading_windows:
     morning:
       start: "09:30"
-      end: "11:20"
+      end: "11:30"
     afternoon:
-      start: "13:00"
-      end: "14:30"
-  off_hours_action: "REJECT"  # QUEUE or REJECT
+      start: "12:30"
+      end: "15:30"
+  off_hours_action: "QUEUE"  # QUEUE or REJECT (QUEUE = 時間外でも受け付ける)
 
 # Logging
 logging:

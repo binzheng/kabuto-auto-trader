@@ -12,6 +12,8 @@ Option Explicit
 ' 安全発注実行（メインエントリーポイント）
 ' ========================================
 Function SafeExecuteOrder(signal As Dictionary) As String
+    Debug.Print "SafeExecuteOrder"
+
     '
     ' 安全発注実行（誤発注防止完全版）
     '
@@ -70,27 +72,25 @@ Function SafeExecuteOrder(signal As Dictionary) As String
 
     Dim rssResult As Variant
     rssResult = Application.Run("RssStockOrder_v", _
-        orderId, _                              ' 1. 発注ID
-        0, _                                    ' 2. 発注トリガー(0=即時)
-        orderParams("ticker"), _                ' 3. 銘柄コード
-        orderParams("side"), _                  ' 4. 売買区分(3=現物買, 1=現物売)
-        orderParams("quantity"), _              ' 5. 発注株数
-        orderParams("priceType"), _             ' 6. 成行指値区分(0=成行)
-        orderParams("price"), _                 ' 7. 指値(成行は0)
-        orderParams("condition"), _             ' 8. 執行条件(0=なし)
-        0, _                                    ' 9. 注文期限区分(0=当日のみ)
-        0, _                                    ' 10. 注文期限年月日時分(0)
-        0, _                                    ' 11. 寄成条件(0=なし)
-        0, _                                    ' 12. 引成条件(0=なし)
-        0, _                                    ' 13. 逆指値トリガー値(0=なし)
-        0, _                                    ' 14. 逆指値執行指値価格(0)
-        0, _                                    ' 15. 逆指値執行条件(0=なし)
-        "", _                                   ' 16. OCO発注ID(なし)
-        "", _                                   ' 17. IFD発注ID(なし)
-        "", _                                   ' 18. 連続注文番号(なし)
-        2, _                                    ' 19. 口座区分(2=特定)
-        0 _                                     ' 20. 預り区分(0=通常)
-    )
+        orderId, _
+        orderParams("ticker"), _
+        orderParams("side"), _
+        0, _
+        0, _
+        orderParams("quantity"), _
+        orderParams("priceType"), _
+        orderParams("price"), _
+        1, _
+        "", _
+        2, _
+        0, _
+        0, _
+        0, _
+        0, _
+        0, _
+        0, _
+        0, _
+        "")
 
     ' === Step 6: 結果判定 ===
     If IsError(rssResult) Then
@@ -145,9 +145,13 @@ Function CanExecuteOrder(orderParams As Dictionary) As Dictionary
     ' 発注可否を多層チェック
     '
     Dim result As New Dictionary
+    Set result = New Dictionary
     result("allowed") = False
     result("reason") = ""
-    result("checks") = New Dictionary
+    
+    Dim checks As Dictionary
+    Set checks = New Dictionary
+    Set result("checks") = checks
 
     ' === Level 1: Kill Switch チェック ===
     If Not IsSystemEnabled() Then
