@@ -5,7 +5,7 @@ OHLCVデータの品質管理と前処理
 
 import pandas as pd
 import numpy as np
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 import logging
 
 logger = logging.getLogger(__name__)

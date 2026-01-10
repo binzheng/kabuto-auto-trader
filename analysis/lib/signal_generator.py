@@ -18,15 +18,20 @@ class SignalGenerator:
     def __init__(
         self,
         df: pd.DataFrame,
-        strategy_params: Optional[Dict] = None
+        strategy_params: Optional[Dict] = None,
+        strategy_type: str = 'trend_state'
     ):
         """
         Args:
             df: インジケーター付きOHLCVデータ
             strategy_params: 戦略パラメータ
+            strategy_type: 戦略タイプ
+                - 'trend_state': トレンド状態（EMA fast > medium > slow）
+                - 'golden_cross': ゴールデンクロス（Pine Script準拠）
         """
         self.df = df.copy()
         self.params = self._get_default_params()
+        self.strategy_type = strategy_type
 
         if strategy_params:
             self.params.update(strategy_params)
@@ -79,10 +84,18 @@ class SignalGenerator:
         エントリーシグナルを生成（ロングのみ）
 
         Kabuto戦略のエントリー条件:
+        【trend_state】
         1. トレンド: 短期EMA > 中期EMA > 長期EMA
         2. モメンタム: rsi_lower < RSI < rsi_upper
         3. 出来高: volume > volume_ma * volume_multiplier
         4. リスクリワード: TP/SL >= min_rr_ratio
+
+        【golden_cross】(Pine Script準拠)
+        1. ゴールデンクロス: 短期EMA が 中期EMA を上抜け
+        2. トレンド: 中期EMA > 長期EMA
+        3. モメンタム: rsi_lower < RSI < rsi_upper
+        4. 出来高: volume > volume_ma * volume_multiplier
+        5. リスクリワード: TP/SL >= min_rr_ratio
 
         Returns:
             self: メソッドチェーン用
@@ -93,11 +106,21 @@ class SignalGenerator:
         if missing_cols:
             raise ValueError(f"必須インジケーターが不足しています: {missing_cols}")
 
-        # 1. トレンド条件
-        trend_condition = (
-            (self.df['ema_fast'] > self.df['ema_medium']) &
-            (self.df['ema_medium'] > self.df['ema_slow'])
-        )
+        # 1. トレンド条件（戦略タイプで異なる）
+        if self.strategy_type == 'golden_cross':
+            # Pine Script準拠: ゴールデンクロス + 上昇トレンド
+            golden_cross = (
+                (self.df['ema_fast'] > self.df['ema_medium']) &
+                (self.df['ema_fast'].shift(1) <= self.df['ema_medium'].shift(1))
+            )
+            trend_up = self.df['ema_medium'] > self.df['ema_slow']
+            trend_condition = golden_cross & trend_up
+        else:
+            # デフォルト（trend_state）: トレンド状態
+            trend_condition = (
+                (self.df['ema_fast'] > self.df['ema_medium']) &
+                (self.df['ema_medium'] > self.df['ema_slow'])
+            )
 
         # 2. モメンタム条件
         momentum_condition = (
@@ -131,7 +154,7 @@ class SignalGenerator:
         self.df['stop_loss'] = self.df['close'] - (self.df['atr'] * self.params['atr_sl_multiplier'])
         self.df['take_profit'] = self.df['close'] + (self.df['atr'] * self.params['atr_tp_multiplier'])
 
-        logger.info(f"エントリーシグナル生成完了: {self.df['entry_signal'].sum()}個")
+        logger.info(f"エントリーシグナル生成完了 ({self.strategy_type}): {self.df['entry_signal'].sum()}個")
         return self
 
     # ========================================
