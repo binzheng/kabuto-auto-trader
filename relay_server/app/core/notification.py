@@ -6,11 +6,12 @@ Slack / Email notification functionality
 import requests
 import json
 from typing import Dict, List, Any, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import redis
 
 logger = logging.getLogger(__name__)
 
@@ -261,17 +262,84 @@ class EmailNotifier:
 class NotificationManager:
     """通知マネージャー"""
 
-    def __init__(self, slack_notifier: Optional[SlackNotifier] = None,
-                 email_notifier: Optional[EmailNotifier] = None):
+    def __init__(self,
+                 slack_notifier: Optional[SlackNotifier] = None,
+                 email_notifier: Optional[EmailNotifier] = None,
+                 redis_client: Optional[redis.Redis] = None,
+                 frequency_limits: Optional[Dict[str, int]] = None):
         self.slack = slack_notifier
         self.email = email_notifier
+        self.redis = redis_client
+        self.frequency_limits = frequency_limits or {
+            'WARNING': 30,
+            'ERROR': 15,
+            'INFO': 60
+        }
+
+    def _should_send_notification(self, level: str, title: str) -> bool:
+        """
+        通知頻度制限チェック
+
+        Args:
+            level: 通知レベル
+            title: 通知のタイトル
+
+        Returns:
+            送信すべきか: True、抑止: False
+        """
+        # CRITICAL は常に送信
+        if level == 'CRITICAL':
+            return True
+
+        # Redis が利用できない場合は常に送信
+        if not self.redis:
+            return True
+
+        key = f"notification:last:{level}:{title}"
+
+        try:
+            last_notify_time_str = self.redis.get(key)
+
+            if not last_notify_time_str:
+                # 初回通知
+                return True
+
+            last_notify_time = datetime.fromisoformat(last_notify_time_str.decode() if isinstance(last_notify_time_str, bytes) else last_notify_time_str)
+            elapsed_minutes = (datetime.now() - last_notify_time).total_seconds() / 60
+
+            interval_minutes = self.frequency_limits.get(level, 30)
+
+            return elapsed_minutes >= interval_minutes
+
+        except Exception as e:
+            logger.error(f"Error checking notification frequency: {e}")
+            return True
+
+    def _record_notification(self, level: str, title: str):
+        """
+        通知時刻を記録
+
+        Args:
+            level: 通知レベル
+            title: 通知のタイトル
+        """
+        if not self.redis:
+            return
+
+        key = f"notification:last:{level}:{title}"
+        try:
+            # 24時間保持
+            self.redis.setex(key, 86400, datetime.now().isoformat())
+        except Exception as e:
+            logger.error(f"Error recording notification: {e}")
 
     def notify(
         self,
         level: str,
         title: str,
         fields: List[Dict[str, Any]],
-        mention_channel: bool = False
+        mention_channel: bool = False,
+        force: bool = False
     ):
         """
         レベルに応じて通知を送信
@@ -281,7 +349,12 @@ class NotificationManager:
             title: タイトル
             fields: フィールドのリスト
             mention_channel: @channel メンションするか
+            force: 頻度制限を無視して送信
         """
+        # 頻度制限チェック
+        if not force and not self._should_send_notification(level, title):
+            logger.info(f"Notification suppressed (frequency limit): {title}")
+            return
 
         # Slack通知
         if self.slack:
@@ -290,6 +363,9 @@ class NotificationManager:
         # メール通知（ERROR以上）
         if self.email and level in ['ERROR', 'CRITICAL']:
             self.email.send(level, title, fields)
+
+        # 通知時刻を記録
+        self._record_notification(level, title)
 
     def notify_signal_generation_failed(self, error: Exception):
         """信号生成失敗を通知"""
@@ -351,3 +427,106 @@ class NotificationManager:
             {'title': '推奨対応', 'value': 'ErrorLogを確認し、共通原因を調査してください', 'short': False}
         ]
         self.notify('ERROR', 'エラー頻発検知', fields)
+
+    def notify_consecutive_failures(self, failure_count: int, last_signal: Dict[str, Any], reason: str):
+        """連続失敗を通知"""
+        fields = [
+            {'title': '失敗数', 'value': f'{failure_count}回連続', 'short': True},
+            {'title': '最後の失敗', 'value': f"{last_signal.get('ticker', 'N/A')} {last_signal.get('action', 'N/A')} {last_signal.get('quantity', 0)}株", 'short': True},
+            {'title': '最終失敗理由', 'value': reason, 'short': False},
+            {'title': '推奨対応', 'value': self._get_recommended_action(reason), 'short': False}
+        ]
+        self.notify('ERROR', f'連続発注失敗（{failure_count}回）', fields)
+
+    def _get_recommended_action(self, reason: str) -> str:
+        """
+        エラー理由に応じた推奨対応を返す
+
+        Args:
+            reason: エラー理由
+
+        Returns:
+            推奨対応文字列
+        """
+        if 'RSS' in reason:
+            return 'RSSの接続状態を確認してください'
+        elif 'API' in reason:
+            return 'APIサーバーの接続状態を確認してください'
+        elif '検証' in reason or 'validation' in reason.lower():
+            return '発注パラメータの設定を確認してください'
+        elif 'リスク' in reason or 'risk' in reason.lower():
+            return 'リスク設定を見直してください'
+        elif 'cooldown' in reason.lower() or 'クールダウン' in reason:
+            return 'クールダウン設定を確認してください'
+        elif 'blacklist' in reason.lower() or 'ブラックリスト' in reason:
+            return 'ブラックリストを確認してください'
+        else:
+            return 'システムログを確認してください'
+
+
+# Global notification manager instance
+_notification_manager: Optional[NotificationManager] = None
+
+
+def init_notification_manager(settings, redis_client: redis.Redis) -> NotificationManager:
+    """
+    Initialize global notification manager
+
+    Args:
+        settings: Application settings
+        redis_client: Redis client instance
+
+    Returns:
+        NotificationManager instance
+    """
+    global _notification_manager
+
+    slack_notifier = None
+    email_notifier = None
+
+    # Initialize Slack notifier
+    if settings.alerts.enabled and settings.alerts.slack_webhook_urls:
+        webhook_urls = {
+            k: v for k, v in settings.alerts.slack_webhook_urls.items() if v
+        }
+        if webhook_urls:
+            slack_notifier = SlackNotifier(webhook_urls)
+            logger.info("Slack notifier initialized")
+
+    # Initialize Email notifier
+    if (settings.alerts.enabled and
+        settings.alerts.email_smtp_host and
+        settings.alerts.email_from and
+        settings.alerts.email_recipients):
+
+        smtp_config = {
+            'server': settings.alerts.email_smtp_host,
+            'port': settings.alerts.email_smtp_port,
+            'use_tls': settings.alerts.email_use_tls,
+            'username': settings.alerts.email_smtp_user,
+            'password': settings.alerts.email_smtp_password,
+            'from': settings.alerts.email_from,
+            'to': ', '.join(settings.alerts.email_recipients)
+        }
+        email_notifier = EmailNotifier(smtp_config)
+        logger.info("Email notifier initialized")
+
+    _notification_manager = NotificationManager(
+        slack_notifier=slack_notifier,
+        email_notifier=email_notifier,
+        redis_client=redis_client,
+        frequency_limits=settings.alerts.frequency_limits
+    )
+
+    logger.info("Notification manager initialized")
+    return _notification_manager
+
+
+def get_notification_manager() -> Optional[NotificationManager]:
+    """
+    Get global notification manager instance
+
+    Returns:
+        NotificationManager instance or None if not initialized
+    """
+    return _notification_manager

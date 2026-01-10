@@ -1,0 +1,1 @@
+{"action": "buy","ticker": "{{ticker}}","quantity": 100,"price": "market","entry_price": {{plot_0}},"stop_loss": {{plot_1}},"take_profit": {{plot_2}},"atr": {{plot_3}},"rr_ratio": {{plot_4}},"rsi": {{plot_5}},"timestamp": "{{time}}","passphrase": "JhZd2DaPMxzL69zq_yOllQaMfaOfu-vSPtvtHnQSweY"}
