@@ -11,7 +11,9 @@ from datetime import datetime
 
 from app.core.config import get_settings
 from app.core.logging import setup_logging, log_api_request, logger
+from app.core.notification import init_notification_manager
 from app.database import init_database
+from app.redis_client import init_redis
 from app.api import webhook, signals, health, admin
 
 
@@ -29,13 +31,31 @@ async def lifespan(app: FastAPI):
     setup_logging()
     logger.info("Logging initialized")
 
+    # Load settings
+    settings = get_settings()
+    logger.info(f"Configuration loaded from config.yaml")
+
     # Initialize database
     init_database()
     logger.info("Database initialized")
 
-    # Load settings
-    settings = get_settings()
-    logger.info(f"Configuration loaded from config.yaml")
+    # Initialize Redis
+    try:
+        redis_client = init_redis()
+        logger.info(f"Redis initialized: {settings.redis.host}:{settings.redis.port}")
+    except Exception as e:
+        logger.error(f"Failed to initialize Redis: {e}")
+        logger.warning("Continuing without Redis (some features may be disabled)")
+        redis_client = None
+
+    # Initialize notification manager
+    try:
+        init_notification_manager(settings, redis_client)
+        logger.info("Notification manager initialized")
+    except Exception as e:
+        logger.error(f"Failed to initialize notification manager: {e}")
+        logger.warning("Continuing without notifications")
+
     logger.info(f"Server: {settings.server.host}:{settings.server.port}")
     logger.info(f"Database: {settings.database.url}")
     logger.info(f"Redis: {settings.redis.host}:{settings.redis.port}")

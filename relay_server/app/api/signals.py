@@ -16,8 +16,9 @@ from app.schemas import (
 )
 from app.models import Signal, SignalState, ExecutionLog, Position
 from app.core.config import get_settings
-from app.core.logging import log_order_executed, logger
+from app.core.logging import log_order_executed, log_risk_violation, logger
 from app.services.risk_control import RiskControlService
+from app.services.pre_order_validation import PreOrderValidationService
 
 router = APIRouter()
 
@@ -50,6 +51,9 @@ async def get_pending_signals(
     Get list of pending signals (not yet fetched by Excel)
 
     Excel VBA polls this endpoint every 5 seconds
+
+    **Important**: This endpoint performs 5-level safety validation
+    before returning signals. Only validated signals are sent to Excel.
     """
     # Query pending signals that haven't expired
     signals = db.query(Signal).filter(
@@ -62,7 +66,44 @@ async def get_pending_signals(
         from fastapi.responses import Response
         return Response(status_code=204)
 
-    # Convert to response schema
+    # Initialize validation service
+    validator = PreOrderValidationService(db)
+
+    # Validate each signal through 5-level safety system
+    validated_signals = []
+
+    for s in signals:
+        # Perform 5-level safety validation
+        allowed, reason, checks = validator.validate_order(
+            ticker=s.ticker,
+            action=s.action,
+            quantity=s.quantity,
+            price_type="market"
+        )
+
+        if allowed:
+            # Signal passed validation
+            validated_signals.append(s)
+            logger.info(f"Signal {s.signal_id} passed 5-level validation: {checks}")
+        else:
+            # Signal failed validation - mark as REJECTED
+            logger.warning(
+                f"Signal {s.signal_id} failed validation: {reason}. "
+                f"Checks: {checks}"
+            )
+            s.state = SignalState.REJECTED
+            s.error_message = f"Pre-order validation failed: {reason}"
+            log_risk_violation(reason, s.ticker)
+
+    # Commit any rejected signals
+    db.commit()
+
+    if not validated_signals:
+        # No validated signals to return
+        from fastapi.responses import Response
+        return Response(status_code=204)
+
+    # Convert validated signals to response schema
     signal_list = [
         SignalResponse(
             signal_id=s.signal_id,
@@ -79,7 +120,7 @@ async def get_pending_signals(
             expires_at=s.expires_at,
             checksum=s.checksum
         )
-        for s in signals
+        for s in validated_signals
     ]
 
     return SignalListResponse(

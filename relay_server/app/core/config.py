@@ -79,11 +79,25 @@ class LoggingConfig(BaseModel):
 
 class AlertsConfig(BaseModel):
     enabled: bool = True
-    slack_webhook_url: Optional[str] = None
+    slack_webhook_urls: dict = {
+        "INFO": None,
+        "WARNING": None,
+        "ERROR": None,
+        "CRITICAL": None
+    }
     email_recipients: List[str] = []
     email_smtp_host: Optional[str] = None
     email_smtp_port: int = 587
+    email_smtp_user: Optional[str] = None
+    email_smtp_password: Optional[str] = None
     email_from: Optional[str] = None
+    email_use_tls: bool = True
+    # Notification frequency limits (minutes)
+    frequency_limits: dict = {
+        "WARNING": 30,
+        "ERROR": 15,
+        "INFO": 60
+    }
 
 
 class HeartbeatConfig(BaseModel):
