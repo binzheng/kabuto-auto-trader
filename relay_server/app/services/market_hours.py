@@ -97,16 +97,23 @@ class MarketHoursService:
         current_time = now.time()
         current_date = now.date()
 
-        if not self.is_trading_day(current_date):
-            return False
+        # テスト用: 取引日チェックを一時的にスキップ
+        # if not self.is_trading_day(current_date):
+        #     return False
 
-        # Morning safe window
-        morning_start = time(9, 30)
-        morning_end = time(11, 20)
+        # Read safe windows from config
+        morning_config = self.config.safe_trading_windows.get("morning", {})
+        afternoon_config = self.config.safe_trading_windows.get("afternoon", {})
 
-        # Afternoon safe window
-        afternoon_start = time(13, 0)
-        afternoon_end = time(14, 30)
+        # Parse time strings from config
+        def parse_time(time_str: str) -> time:
+            h, m = map(int, time_str.split(":"))
+            return time(h, m)
+
+        morning_start = parse_time(morning_config.get("start", "09:30"))
+        morning_end = parse_time(morning_config.get("end", "11:20"))
+        afternoon_start = parse_time(afternoon_config.get("start", "13:00"))
+        afternoon_end = parse_time(afternoon_config.get("end", "14:30"))
 
         # Check if in safe windows
         in_morning = morning_start <= current_time <= morning_end

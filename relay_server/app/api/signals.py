@@ -86,12 +86,12 @@ async def get_pending_signals(
             validated_signals.append(s)
             logger.info(f"Signal {s.signal_id} passed 5-level validation: {checks}")
         else:
-            # Signal failed validation - mark as REJECTED
+            # Signal failed validation - mark as FAILED
             logger.warning(
                 f"Signal {s.signal_id} failed validation: {reason}. "
                 f"Checks: {checks}"
             )
-            s.state = SignalState.REJECTED
+            s.state = SignalState.FAILED
             s.error_message = f"Pre-order validation failed: {reason}"
             log_risk_violation(reason, s.ticker)
 

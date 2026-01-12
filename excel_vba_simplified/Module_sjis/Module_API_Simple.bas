@@ -13,13 +13,6 @@ Attribute VB_Name = "Module_API_Simple"
 Option Explicit
 
 ' ========================================
-' 設定
-' ========================================
-Private Const API_BASE_URL As String = "http://localhost:5000"
-Private Const API_KEY As String = "your_api_key_here"
-Private Const CLIENT_ID As String = "excel_vba_01"
-
-' ========================================
 ' 検証済みシグナル取得
 ' ========================================
 Function API_GetPendingSignals() As Collection
@@ -32,13 +25,14 @@ Function API_GetPendingSignals() As Collection
     On Error GoTo ErrorHandler
 
     Dim http As Object
-    Set http = CreateObject("MSXML2.XMLHTTP")
+    Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
 
     Dim url As String
-    url = API_BASE_URL & "/api/signals/pending"
+    url = GetConfig("API_BASE_URL") & "/api/signals/pending"
 
     http.Open "GET", url, False
-    http.setRequestHeader "Authorization", "Bearer " & API_KEY
+    http.setTimeouts 5000, 5000, 10000, 10000  ' リゾルブ, 接続, 送信, 受信タイムアウト(ms)
+    http.setRequestHeader "Authorization", "Bearer " & GetConfig("API_KEY")
     http.setRequestHeader "Content-Type", "application/json"
     http.Send
 
@@ -50,7 +44,7 @@ Function API_GetPendingSignals() As Collection
 
     ' 200 OK = シグナルあり
     If http.Status = 200 Then
-        Dim response As Dictionary
+        Dim response As Object
         Set response = JsonConverter.ParseJson(http.responseText)
 
         If response("count") > 0 Then
@@ -59,14 +53,14 @@ Function API_GetPendingSignals() As Collection
             Set API_GetPendingSignals = Nothing
         End If
     Else
-        Debug.Print "API Error: GET /signals/pending returned " & http.Status
+        Call LogError("API Error: GET /signals/pending returned " & http.Status)
         Set API_GetPendingSignals = Nothing
     End If
 
     Exit Function
 
 ErrorHandler:
-    Debug.Print "Error in API_GetPendingSignals: " & Err.Description
+    Call LogError("Error in API_GetPendingSignals: " & Err.Description)
     Set API_GetPendingSignals = Nothing
 End Function
 
@@ -80,17 +74,18 @@ Sub API_AcknowledgeSignal(signalId As String, checksum As String)
     On Error Resume Next
 
     Dim http As Object
-    Set http = CreateObject("MSXML2.XMLHTTP")
+    Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
 
     Dim url As String
-    url = API_BASE_URL & "/api/signals/" & signalId & "/ack"
+    url = GetConfig("API_BASE_URL") & "/api/signals/" & signalId & "/ack"
 
     ' リクエストボディ構築
     Dim body As String
-    body = "{""client_id"": """ & CLIENT_ID & """, ""checksum"": """ & checksum & """}"
+    body = "{""client_id"": """ & GetConfig("CLIENT_ID") & """, ""checksum"": """ & checksum & """}"
 
     http.Open "POST", url, False
-    http.setRequestHeader "Authorization", "Bearer " & API_KEY
+    http.setTimeouts 5000, 5000, 10000, 10000
+    http.setRequestHeader "Authorization", "Bearer " & GetConfig("API_KEY")
     http.setRequestHeader "Content-Type", "application/json"
     http.Send body
 
@@ -111,14 +106,15 @@ Sub API_ReportExecution(signalId As String, orderId As String, executionPrice As
     On Error Resume Next
 
     Dim http As Object
-    Set http = CreateObject("MSXML2.XMLHTTP")
+    Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
 
     Dim url As String
-    url = API_BASE_URL & "/api/signals/" & signalId & "/executed"
+    url = GetConfig("API_BASE_URL") & "/api/signals/" & signalId & "/executed"
 
     ' リクエストボディ構築
     Dim body As String
     body = "{" & _
+           """client_id"": """ & GetConfig("CLIENT_ID") & """," & _
            """order_id"": """ & orderId & """," & _
            """execution_price"": " & executionPrice & "," & _
            """execution_quantity"": " & executionQuantity & "," & _
@@ -126,7 +122,8 @@ Sub API_ReportExecution(signalId As String, orderId As String, executionPrice As
            "}"
 
     http.Open "POST", url, False
-    http.setRequestHeader "Authorization", "Bearer " & API_KEY
+    http.setTimeouts 5000, 5000, 10000, 10000
+    http.setRequestHeader "Authorization", "Bearer " & GetConfig("API_KEY")
     http.setRequestHeader "Content-Type", "application/json"
     http.Send body
 
@@ -147,10 +144,10 @@ Sub API_ReportFailure(signalId As String, errorMessage As String)
     On Error Resume Next
 
     Dim http As Object
-    Set http = CreateObject("MSXML2.XMLHTTP")
+    Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
 
     Dim url As String
-    url = API_BASE_URL & "/api/signals/" & signalId & "/failed"
+    url = GetConfig("API_BASE_URL") & "/api/signals/" & signalId & "/failed"
 
     ' エスケープ処理
     Dim escapedError As String
@@ -159,10 +156,11 @@ Sub API_ReportFailure(signalId As String, errorMessage As String)
 
     ' リクエストボディ構築
     Dim body As String
-    body = "{""error"": """ & escapedError & """}"
+    body = "{""client_id"": """ & GetConfig("CLIENT_ID") & """, ""error"": """ & escapedError & """}"
 
     http.Open "POST", url, False
-    http.setRequestHeader "Authorization", "Bearer " & API_KEY
+    http.setTimeouts 5000, 5000, 10000, 10000
+    http.setRequestHeader "Authorization", "Bearer " & GetConfig("API_KEY")
     http.setRequestHeader "Content-Type", "application/json"
     http.Send body
 
@@ -183,12 +181,13 @@ Function API_TestConnection() As Boolean
     On Error GoTo ErrorHandler
 
     Dim http As Object
-    Set http = CreateObject("MSXML2.XMLHTTP")
+    Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
 
     Dim url As String
-    url = API_BASE_URL & "/ping"
+    url = GetConfig("API_BASE_URL") & "/ping"
 
     http.Open "GET", url, False
+    http.setTimeouts 5000, 5000, 10000, 10000
     http.Send
 
     If http.Status = 200 Then

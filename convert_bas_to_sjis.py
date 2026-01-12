@@ -3,8 +3,8 @@
 Convert Excel VBA .bas files from UTF-8 to Shift-JIS encoding
 
 Usage:
-    python3 convert_bas_to_sjis.py --source <元フォルダ> --destination <変換先フォルダ>
-
+    python convert_bas_to_sjis.py --source <元フォルダ> --destination <変換先フォルダ>
+    python convert_bas_to_sjis.py --source excel_vba_simplified\Module --destination excel_vba_simplified\Module_sjis
 Examples:
     # excel_vba_simplified/Module から excel_vba_sjis へ変換
     python3 convert_bas_to_sjis.py --source excel_vba_simplified/Module --destination excel_vba_sjis
