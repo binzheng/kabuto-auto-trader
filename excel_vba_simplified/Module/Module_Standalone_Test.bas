@@ -60,6 +60,52 @@ ErrorHandler:
 End Sub
 
 ' ========================================
+' ExecuteRSSOrder quick test
+' ========================================
+Sub TestExecuteRSSOrder()
+    On Error GoTo ErrorHandler
+
+    Dim signal As Dictionary
+    Set signal = CreateMockSignal("7203", "buy", 100)
+
+    Call LogInfo("TestExecuteRSSOrder: start")
+
+    Dim orderId As String
+    orderId = ExecuteRSSOrder(signal)
+
+    If orderId <> "" Then
+        Call LogSuccess("TestExecuteRSSOrder: success orderId=" & orderId)
+    Else
+        Call LogError("TestExecuteRSSOrder: failed")
+    End If
+
+    Exit Sub
+
+ErrorHandler:
+    Call LogError("TestExecuteRSSOrder error: " & Err.Description)
+End Sub
+
+' ========================================
+' Create test button on Dashboard
+' ========================================
+Sub CreateExecuteRSSOrderTestButton()
+    On Error Resume Next
+
+    Dim ws As Worksheet
+    Set ws = ThisWorkbook.Sheets("Dashboard")
+
+    ws.Buttons("btnTestExecuteRSSOrder").Delete
+
+    Dim btn As Button
+    Set btn = ws.Buttons.Add(ws.Range("D3").Left, ws.Range("D3").Top, 170, 28)
+    btn.Name = "btnTestExecuteRSSOrder"
+    btn.OnAction = "TestExecuteRSSOrder"
+    btn.Characters.Text = "Test ExecuteRSSOrder"
+
+    Call LogInfo("Test button created: " & btn.Name)
+End Sub
+
+' ========================================
 ' テスト初期化
 ' ========================================
 Sub InitializeTestEnvironment()

@@ -33,6 +33,7 @@ Function SafeExecuteOrder(signal As Dictionary) As String
     Debug.Print "Signal ID: " & signal("signal_id")
     Debug.Print "Ticker: " & orderParams("ticker")
     Debug.Print "Action: " & signal("action")
+    Debug.Print "Price: " & signal("action")
     Debug.Print "Quantity: " & orderParams("quantity")
 
     ' === Step 2: 発注可否判定（5段階チェック） ===

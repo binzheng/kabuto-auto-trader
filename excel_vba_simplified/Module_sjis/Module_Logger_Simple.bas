@@ -17,6 +17,7 @@ Sub LogDebug(message As String)
     timestamp = Format(Now, "yyyy-mm-dd HH:nn:ss")
 
     Debug.Print "[" & timestamp & "] " & message
+    Call LogToFile(message, "DEBUG")
 End Sub
 
 ' ========================================

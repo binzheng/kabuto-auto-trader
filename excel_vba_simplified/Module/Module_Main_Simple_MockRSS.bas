@@ -232,26 +232,142 @@ Function ExecuteRSSOrder(signal As Dictionary) As String
 
     ' RssStockOrder_v呼び出し
     Dim rssResult As Variant
-    rssResult = Application.Run("RssStockOrder_v", _
-        orderId, _
-        ticker, _
-        side, _
-        0, _
-        0, _
-        quantity, _
-        0, _
-        0, _
-        1, _
-        "", _
-        2, _
-        0, _
-        0, _
-        0, _
-        0, _
-        0, _
-        0, _
-        0, _
-        "")
+        Dim orderIdNum As Long
+        orderIdNum = CLng(DateDiff("s", DateSerial(2020, 1, 1), Now))
+
+        Dim sideCode As String
+        sideCode = CStr(side)
+
+        Dim orderType As String
+
+        Dim stopLoss As Double
+        Dim takeProfit As Double
+
+        stopLoss = 0
+        takeProfit = 0
+
+        On Error Resume Next
+        stopLoss = CDbl(signal("stop_loss"))
+        takeProfit = CDbl(signal("take_profit"))
+        On Error GoTo ErrorHandler
+
+        If stopLoss > 0 Or takeProfit > 0 Then
+            If stopLoss > 0 And takeProfit > 0 Then
+                orderType = "1"
+            Else
+                Call LogError("ExecuteRSSOrder: stop_loss and take_profit must both be set for set order")
+                ExecuteRSSOrder = ""
+                Exit Function
+            End If
+        Else
+            orderType = "0"
+        End If
+
+        Dim sorType As String
+
+        sorType = "0"
+
+
+        Dim priceType As String
+
+        priceType = "1"
+
+        Dim orderPrice As Double
+        orderPrice = CDbl(signal("entry_price"))
+
+
+
+        Dim execCondition As String
+
+        execCondition = "1"
+
+
+
+        Dim orderExpiry As String
+
+        orderExpiry = ""
+
+
+
+        Dim accountType As String
+
+        accountType = "2"
+
+        Dim reverseConditionPrice As Variant
+        Dim reverseConditionType As Variant
+        Dim reversePriceType As Variant
+        Dim reversePrice As Variant
+
+        Dim setOrderType As String
+        Dim setOrderPrice As Variant
+        Dim setExecutionCondition As String
+        Dim setOrderExpiry As String
+
+        reverseConditionPrice = ""
+        reverseConditionType = ""
+        reversePriceType = ""
+        reversePrice = ""
+        setOrderType = "0"
+        setOrderPrice = ""
+        setExecutionCondition = "0"
+        setOrderExpiry = ""
+
+        If orderType = "1" Then
+            reverseConditionPrice = stopLoss
+            If side = 3 Then
+                reverseConditionType = "2"
+            Else
+                reverseConditionType = "1"
+            End If
+            reversePriceType = "1"
+            reversePrice = stopLoss
+
+            setOrderType = "1"
+            setOrderPrice = takeProfit
+            setExecutionCondition = execCondition
+        End If
+
+        Call LogDebug("RssStockOrder_v params: " & _
+            "orderIdNum=" & CStr(orderIdNum) & _
+            ", ticker=" & CStr(ticker) & _
+            ", side=" & CStr(sideCode) & _
+            ", orderType=" & CStr(orderType) & _
+            ", sorType=" & CStr(sorType) & _
+            ", quantity=" & CStr(quantity) & _
+            ", priceType=" & CStr(priceType) & _
+            ", price=" & CStr(orderPrice) & _
+            ", execCondition=" & CStr(execCondition) & _
+            ", orderExpiry=" & CStr(orderExpiry) & _
+            ", accountType=" & CStr(accountType) & _
+            ", reverseConditionPrice=" & CStr(reverseConditionPrice) & _
+            ", reverseConditionType=" & CStr(reverseConditionType) & _
+            ", reversePriceType=" & CStr(reversePriceType) & _
+            ", reversePrice=" & CStr(reversePrice) & _
+            ", setOrderType=" & CStr(setOrderType) & _
+            ", setOrderPrice=" & CStr(setOrderPrice) & _
+            ", setExecutionCondition=" & CStr(setExecutionCondition) & _
+            ", setOrderExpiry=" & CStr(setOrderExpiry))
+
+        rssResult = Application.Run("RssStockOrder_v", _
+            orderIdNum, _
+            ticker, _
+            sideCode, _
+            orderType, _
+            sorType, _
+            quantity, _
+            priceType, _
+            orderPrice, _
+            execCondition, _
+            orderExpiry, _
+            accountType, _
+            reverseConditionPrice, _
+            reverseConditionType, _
+            reversePriceType, _
+            reversePrice, _
+            setOrderType, _
+            setOrderPrice, _
+            setExecutionCondition, _
+            setOrderExpiry)
 
     ' 結果判定
     If IsError(rssResult) Then
