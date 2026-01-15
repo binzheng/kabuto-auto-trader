@@ -174,6 +174,18 @@ Sub ExecuteValidatedSignal(signal As Object)
     Call LogInfo("Action: " & signal("action"))
     Call LogInfo("Quantity: " & signal("quantity"))
 
+    Dim logPrice As Variant
+    Dim logReverseConditionPrice As Variant
+    Dim logReversePrice As Variant
+    Dim logQuantity As Variant
+
+    On Error Resume Next
+    logPrice = signal("entry_price")
+    logReverseConditionPrice = signal("stop_loss")
+    logReversePrice = signal("stop_loss")
+    logQuantity = signal("quantity")
+    On Error GoTo ErrorHandler
+
     ' RSS注�?実�?
     Dim orderId As String
     orderId = ExecuteRSSOrder(signal)
@@ -195,7 +207,7 @@ Sub ExecuteValidatedSignal(signal As Object)
         )
 
         ' ローカルログ記録
-        Call LogOrderSuccess(signal("signal_id"), signal("ticker"), signal("action"), orderId)
+        Call LogOrderSuccess(signal("signal_id"), signal("ticker"), signal("action"), orderId, logPrice, logReverseConditionPrice, logReversePrice, logQuantity)
     Else
         ' 失�? - Relay Serverに報�?
         Call LogError("Order execution failed")
@@ -204,7 +216,7 @@ Sub ExecuteValidatedSignal(signal As Object)
         Call API_ReportFailure(signal("signal_id"), "RSS execution failed")
 
         ' ローカルログ記録
-        Call LogOrderFailure(signal("signal_id"), signal("ticker"), signal("action"), "RSS execution failed")
+        Call LogOrderFailure(signal("signal_id"), signal("ticker"), signal("action"), "RSS execution failed", logPrice, logReverseConditionPrice, logReversePrice, logQuantity)
     End If
 
     Exit Sub
@@ -212,7 +224,7 @@ Sub ExecuteValidatedSignal(signal As Object)
 ErrorHandler:
     Call LogError("Error in ExecuteValidatedSignal: " & Err.Description)
     Call API_ReportFailure(signal("signal_id"), "Exception: " & Err.Description)
-    Call LogOrderFailure(signal("signal_id"), signal("ticker"), signal("action"), Err.Description)
+    Call LogOrderFailure(signal("signal_id"), signal("ticker"), signal("action"), Err.Description, logPrice, logReverseConditionPrice, logReversePrice, logQuantity)
 End Sub
 
 ' ========================================
@@ -273,12 +285,18 @@ Function ExecuteRSSOrder(signal As Object) As String
         ' 本番モー�?: 実際のRSS呼び出�?
         ' tickerをLong型に変換?��日本の証券コード�?�数値?�?
 
-        Dim orderIdNum As Long
-        orderIdNum = CLng(DateDiff("s", DateSerial(2020, 1, 1), Now))
-
-        Dim sideCode As String
-        sideCode = CStr(side)
-
+        Dim orderIdNum As Long
+
+        orderIdNum = CLng(DateDiff("s", DateSerial(2020, 1, 1), Now))
+
+
+
+        Dim sideCode As String
+
+        sideCode = CStr(side)
+
+
+
         Dim orderType As String
 
         Dim stopLoss As Double
@@ -334,7 +352,8 @@ Function ExecuteRSSOrder(signal As Object) As String
 
         accountType = "2"
 
-
+
+
         Dim reverseConditionPrice As Variant
         Dim reverseConditionType As Variant
         Dim reversePriceType As Variant
@@ -369,7 +388,8 @@ Function ExecuteRSSOrder(signal As Object) As String
             setExecutionCondition = execCondition
         End If
 
-
+
+
         Call LogDebug("RssStockOrder_v params: " & _
             "orderIdNum=" & CStr(orderIdNum) & _
             ", ticker=" & CStr(ticker) & _
@@ -391,8 +411,27 @@ Function ExecuteRSSOrder(signal As Object) As String
             ", setExecutionCondition=" & CStr(setExecutionCondition) & _
             ", setOrderExpiry=" & CStr(setOrderExpiry))
 
-        rssResult = Application.Run("RssStockOrder_v", _            orderIdNum, _            ticker, _            sideCode, _            orderType, _            sorType, _            quantity, _            priceType, _            orderPrice, _
-            execCondition, _            orderExpiry, _            accountType, _            reverseConditionPrice, _            reverseConditionType, _            reversePriceType, _            reversePrice, _            setOrderType, _            setOrderPrice, _            setExecutionCondition, _            setOrderExpiry)
+        rssResult = Application.Run("RssStockOrder_v", _
+            orderIdNum, _
+            ticker, _
+            sideCode, _
+            orderType, _
+            sorType, _
+            quantity, _
+            priceType, _
+            orderPrice, _
+            execCondition, _
+            orderExpiry, _
+            accountType, _
+            reverseConditionPrice, _
+            reverseConditionType, _
+            reversePriceType, _
+            reversePrice, _
+            setOrderType, _
+            setOrderPrice, _
+            setExecutionCondition, _
+            setOrderExpiry)
+
     End If
 
     ' 結果判�?
@@ -426,7 +465,7 @@ End Function
 ' ========================================
 ' ローカルログ記録?���?�功?�?
 ' ========================================
-Sub LogOrderSuccess(signalId As String, ticker As String, action As String, orderId As String)
+Sub LogOrderSuccess(signalId As String, ticker As String, action As String, orderId As String, price As Variant, reverseConditionPrice As Variant, reversePrice As Variant, quantity As Variant)
     On Error Resume Next
 
     Dim ws As Worksheet
@@ -441,12 +480,17 @@ Sub LogOrderSuccess(signalId As String, ticker As String, action As String, orde
     ws.Cells(nextRow, 4).Value = action
     ws.Cells(nextRow, 5).Value = orderId
     ws.Cells(nextRow, 6).Value = "SUCCESS"
+    ws.Cells(nextRow, 7).Value = ""
+    ws.Cells(nextRow, 8).Value = price
+    ws.Cells(nextRow, 9).Value = reverseConditionPrice
+    ws.Cells(nextRow, 10).Value = reversePrice
+    ws.Cells(nextRow, 11).Value = quantity
 End Sub
 
 ' ========================================
 ' ローカルログ記録?��失敗�?
 ' ========================================
-Sub LogOrderFailure(signalId As String, ticker As String, action As String, reason As String)
+Sub LogOrderFailure(signalId As String, ticker As String, action As String, reason As String, price As Variant, reverseConditionPrice As Variant, reversePrice As Variant, quantity As Variant)
     On Error Resume Next
 
     Dim ws As Worksheet
@@ -462,6 +506,10 @@ Sub LogOrderFailure(signalId As String, ticker As String, action As String, reas
     ws.Cells(nextRow, 5).Value = ""
     ws.Cells(nextRow, 6).Value = "FAILED"
     ws.Cells(nextRow, 7).Value = reason
+    ws.Cells(nextRow, 8).Value = price
+    ws.Cells(nextRow, 9).Value = reverseConditionPrice
+    ws.Cells(nextRow, 10).Value = reversePrice
+    ws.Cells(nextRow, 11).Value = quantity
 End Sub
 
 ' ========================================

@@ -174,6 +174,18 @@ Sub ExecuteValidatedSignal(signal As Object)
     Call LogInfo("Action: " & signal("action"))
     Call LogInfo("Quantity: " & signal("quantity"))
 
+    Dim logPrice As Variant
+    Dim logReverseConditionPrice As Variant
+    Dim logReversePrice As Variant
+    Dim logQuantity As Variant
+
+    On Error Resume Next
+    logPrice = signal("entry_price")
+    logReverseConditionPrice = signal("stop_loss")
+    logReversePrice = signal("stop_loss")
+    logQuantity = signal("quantity")
+    On Error GoTo ErrorHandler
+
     ' RSS注文実行
     Dim orderId As String
     orderId = ExecuteRSSOrder(signal)
@@ -195,7 +207,7 @@ Sub ExecuteValidatedSignal(signal As Object)
         )
 
         ' ローカルログ記録
-        Call LogOrderSuccess(signal("signal_id"), signal("ticker"), signal("action"), orderId)
+        Call LogOrderSuccess(signal("signal_id"), signal("ticker"), signal("action"), orderId, logPrice, logReverseConditionPrice, logReversePrice, logQuantity)
     Else
         ' 失敗 - Relay Serverに報告
         Call LogError("Order execution failed")
@@ -204,7 +216,7 @@ Sub ExecuteValidatedSignal(signal As Object)
         Call API_ReportFailure(signal("signal_id"), "RSS execution failed")
 
         ' ローカルログ記録
-        Call LogOrderFailure(signal("signal_id"), signal("ticker"), signal("action"), "RSS execution failed")
+        Call LogOrderFailure(signal("signal_id"), signal("ticker"), signal("action"), "RSS execution failed", logPrice, logReverseConditionPrice, logReversePrice, logQuantity)
     End If
 
     Exit Sub
@@ -212,7 +224,7 @@ Sub ExecuteValidatedSignal(signal As Object)
 ErrorHandler:
     Call LogError("Error in ExecuteValidatedSignal: " & Err.Description)
     Call API_ReportFailure(signal("signal_id"), "Exception: " & Err.Description)
-    Call LogOrderFailure(signal("signal_id"), signal("ticker"), signal("action"), Err.Description)
+    Call LogOrderFailure(signal("signal_id"), signal("ticker"), signal("action"), Err.Description, logPrice, logReverseConditionPrice, logReversePrice, logQuantity)
 End Sub
 
 ' ========================================
@@ -453,7 +465,7 @@ End Function
 ' ========================================
 ' ローカルログ記録（成功）
 ' ========================================
-Sub LogOrderSuccess(signalId As String, ticker As String, action As String, orderId As String)
+Sub LogOrderSuccess(signalId As String, ticker As String, action As String, orderId As String, price As Variant, reverseConditionPrice As Variant, reversePrice As Variant, quantity As Variant)
     On Error Resume Next
 
     Dim ws As Worksheet
@@ -468,12 +480,17 @@ Sub LogOrderSuccess(signalId As String, ticker As String, action As String, orde
     ws.Cells(nextRow, 4).Value = action
     ws.Cells(nextRow, 5).Value = orderId
     ws.Cells(nextRow, 6).Value = "SUCCESS"
+    ws.Cells(nextRow, 7).Value = ""
+    ws.Cells(nextRow, 8).Value = price
+    ws.Cells(nextRow, 9).Value = reverseConditionPrice
+    ws.Cells(nextRow, 10).Value = reversePrice
+    ws.Cells(nextRow, 11).Value = quantity
 End Sub
 
 ' ========================================
 ' ローカルログ記録（失敗）
 ' ========================================
-Sub LogOrderFailure(signalId As String, ticker As String, action As String, reason As String)
+Sub LogOrderFailure(signalId As String, ticker As String, action As String, reason As String, price As Variant, reverseConditionPrice As Variant, reversePrice As Variant, quantity As Variant)
     On Error Resume Next
 
     Dim ws As Worksheet
@@ -489,6 +506,10 @@ Sub LogOrderFailure(signalId As String, ticker As String, action As String, reas
     ws.Cells(nextRow, 5).Value = ""
     ws.Cells(nextRow, 6).Value = "FAILED"
     ws.Cells(nextRow, 7).Value = reason
+    ws.Cells(nextRow, 8).Value = price
+    ws.Cells(nextRow, 9).Value = reverseConditionPrice
+    ws.Cells(nextRow, 10).Value = reversePrice
+    ws.Cells(nextRow, 11).Value = quantity
 End Sub
 
 ' ========================================

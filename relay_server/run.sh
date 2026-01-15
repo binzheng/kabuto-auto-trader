@@ -5,12 +5,14 @@ echo "============================================"
 echo "Kabuto Relay Server - Starting..."
 echo "============================================"
 
-# Check if Redis is running
-if ! redis-cli ping > /dev/null 2>&1; then
+# Check if Redis is running (Podman container)
+if ! podman exec redis redis-cli ping > /dev/null 2>&1; then
     echo "ERROR: Redis is not running"
-    echo "Please start Redis with: redis-server"
+    echo "Please start Redis with: podman start redis"
+    echo "Or check if Podman container 'redis' exists"
     exit 1
 fi
+echo "Redis connection: OK"
 
 # Check if data directory exists
 if [ ! -d "data/logs" ]; then

@@ -78,7 +78,7 @@ Start時に自動的に以下のステータス表示が作成されます：
 
 | A列 | B列 | C列 | D列 | E列 | F列 | G列 |
 |-----|-----|-----|-----|-----|-----|-----|
-| Timestamp | Signal ID | Ticker | Action | Order ID | Status | Reason |
+| Timestamp | Signal ID | Ticker | Action | Order ID | Status | Reason | Price | ReverseConditionPrice | ReversePrice | Quantity |
 
 ---
 
