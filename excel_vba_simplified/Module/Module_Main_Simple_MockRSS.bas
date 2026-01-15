@@ -110,6 +110,18 @@ Sub ExecuteValidatedSignal(signal As Dictionary)
     Call LogDebug("Action: " & signal("action"))
     Call LogDebug("Quantity: " & signal("quantity"))
 
+    Dim logPrice As Variant
+    Dim logReverseConditionPrice As Variant
+    Dim logReversePrice As Variant
+    Dim logQuantity As Variant
+
+    On Error Resume Next
+    logPrice = signal("entry_price")
+    logReverseConditionPrice = signal("stop_loss")
+    logReversePrice = signal("stop_loss")
+    logQuantity = signal("quantity")
+    On Error GoTo ErrorHandler
+
     ' MOCK RSS注文実行
     Dim orderId As String
     orderId = ExecuteRSSOrder_Mock(signal)
@@ -130,7 +142,7 @@ Sub ExecuteValidatedSignal(signal As Dictionary)
         )
 
         ' ローカルログ記録
-        Call LogOrderSuccess(signal("signal_id"), signal("ticker"), signal("action"), orderId)
+        Call LogOrderSuccess(signal("signal_id"), signal("ticker"), signal("action"), orderId, logPrice, logReverseConditionPrice, logReversePrice, logQuantity)
     Else
         ' 失敗 - Relay Serverに報告
         Call LogError("Order execution failed")
@@ -146,7 +158,7 @@ Sub ExecuteValidatedSignal(signal As Dictionary)
 ErrorHandler:
     Call LogError("Error in ExecuteValidatedSignal: " & Err.Description)
     Call API_ReportFailure(signal("signal_id"), "Exception: " & Err.Description)
-    Call LogOrderFailure(signal("signal_id"), signal("ticker"), signal("action"), Err.Description)
+    Call LogOrderFailure(signal("signal_id"), signal("ticker"), signal("action"), Err.Description, logPrice, logReverseConditionPrice, logReversePrice, logQuantity)
 End Sub
 
 ' ========================================
@@ -396,7 +408,7 @@ End Function
 ' ========================================
 ' ローカルログ記録（成功）
 ' ========================================
-Sub LogOrderSuccess(signalId As String, ticker As String, action As String, orderId As String)
+Sub LogOrderSuccess(signalId As String, ticker As String, action As String, orderId As String, price As Variant, reverseConditionPrice As Variant, reversePrice As Variant, quantity As Variant)
     On Error Resume Next
 
     Dim ws As Worksheet
@@ -412,6 +424,11 @@ Sub LogOrderSuccess(signalId As String, ticker As String, action As String, orde
     ws.Cells(nextRow, 5).Value = orderId
     ws.Cells(nextRow, 6).Value = "SUCCESS"
     ws.Cells(nextRow, 7).Value = ""
+    ws.Cells(nextRow, 8).Value = price
+    ws.Cells(nextRow, 9).Value = reverseConditionPrice
+    ws.Cells(nextRow, 10).Value = reversePrice
+    ws.Cells(nextRow, 11).Value = quantity
+    ws.Cells(nextRow, 7).Value = ""
 
     ' 成功行を緑でハイライト
     ws.Rows(nextRow).Interior.Color = RGB(144, 238, 144)  ' Light Green
@@ -420,7 +437,7 @@ End Sub
 ' ========================================
 ' ローカルログ記録（失敗）
 ' ========================================
-Sub LogOrderFailure(signalId As String, ticker As String, action As String, reason As String)
+Sub LogOrderFailure(signalId As String, ticker As String, action As String, reason As String, price As Variant, reverseConditionPrice As Variant, reversePrice As Variant, quantity As Variant)
     On Error Resume Next
 
     Dim ws As Worksheet
@@ -436,6 +453,10 @@ Sub LogOrderFailure(signalId As String, ticker As String, action As String, reas
     ws.Cells(nextRow, 5).Value = ""
     ws.Cells(nextRow, 6).Value = "FAILED"
     ws.Cells(nextRow, 7).Value = reason
+    ws.Cells(nextRow, 8).Value = price
+    ws.Cells(nextRow, 9).Value = reverseConditionPrice
+    ws.Cells(nextRow, 10).Value = reversePrice
+    ws.Cells(nextRow, 11).Value = quantity
 
     ' 失敗行を赤でハイライト
     ws.Rows(nextRow).Interior.Color = RGB(255, 182, 193)  ' Light Pink
