@@ -26,7 +26,7 @@ Sub RunStandaloneTest()
     On Error GoTo ErrorHandler
 
     Debug.Print "=================================="
-    Debug.Print "🧪 Kabuto - Standalone Unit Test"
+    Debug.Print "[TEST] Kabuto - Standalone Unit Test"
     Debug.Print "=================================="
     Debug.Print ""
 
@@ -43,19 +43,19 @@ Sub RunStandaloneTest()
 
     Debug.Print ""
     Debug.Print "=================================="
-    Debug.Print "✅ All tests completed!"
+    Debug.Print "[OK] All tests completed!"
     Debug.Print "=================================="
     Debug.Print ""
     Debug.Print "Check OrderLog sheet for results."
 
-    MsgBox "✅ Standalone tests completed!" & vbCrLf & _
+    MsgBox "[OK] Standalone tests completed!" & vbCrLf & _
            "Check OrderLog sheet and VBA Debug window (Ctrl+G) for details.", _
            vbInformation, "Test Complete"
 
     Exit Sub
 
 ErrorHandler:
-    Debug.Print "❌ Test failed: " & Err.Description
+    Debug.Print "[ERROR] Test failed: " & Err.Description
     MsgBox "Test failed: " & Err.Description, vbCritical
 End Sub
 
@@ -109,7 +109,7 @@ End Sub
 ' テスト初期化
 ' ========================================
 Sub InitializeTestEnvironment()
-    Debug.Print "📋 Initializing test environment..."
+    Debug.Print "[INFO] Initializing test environment..."
 
     ' OrderLogシートをクリア（ヘッダー以外）
     Dim ws As Worksheet
@@ -119,7 +119,7 @@ Sub InitializeTestEnvironment()
         ws.Rows("2:" & ws.Cells(ws.Rows.Count, 1).End(xlUp).Row).Delete
     End If
 
-    Debug.Print "✅ Environment initialized"
+    Debug.Print "[OK] Environment initialized"
     Debug.Print ""
 End Sub
 
@@ -137,7 +137,7 @@ Sub Test1_CreateMockSignal()
     Debug.Print "Ticker: " & signal("ticker")
     Debug.Print "Action: " & signal("action")
     Debug.Print "Quantity: " & signal("quantity")
-    Debug.Print "✅ Test 1 passed"
+    Debug.Print "[OK] Test 1 passed"
     Debug.Print ""
 End Sub
 
@@ -154,7 +154,7 @@ Sub Test2_ProcessSignal()
     ' シグナル処理
     Call ProcessSignalStandalone(signal)
 
-    Debug.Print "✅ Test 2 passed"
+    Debug.Print "[OK] Test 2 passed"
     Debug.Print ""
 End Sub
 
@@ -173,9 +173,9 @@ Sub Test3_ExecuteMockOrder()
 
     If orderId <> "" Then
         Debug.Print "Order ID: " & orderId
-        Debug.Print "✅ Test 3 passed"
+        Debug.Print "[OK] Test 3 passed"
     Else
-        Debug.Print "❌ Test 3 failed: No order ID"
+        Debug.Print "[ERROR] Test 3 failed: No order ID"
     End If
 
     Debug.Print ""
@@ -190,7 +190,7 @@ Sub Test4_LogOrder()
 
     Call LogOrderSuccess_Standalone("sig_test_001", "7201", "buy", "ORD_TEST_001")
 
-    Debug.Print "✅ Test 4 passed (check OrderLog sheet)"
+    Debug.Print "[OK] Test 4 passed (check OrderLog sheet)"
     Debug.Print ""
 End Sub
 
@@ -223,7 +223,7 @@ Sub Test5_MultipleSignals()
         Call ProcessSignalStandalone(signal)
     Next i
 
-    Debug.Print "✅ Test 5 passed"
+    Debug.Print "[OK] Test 5 passed"
     Debug.Print ""
 End Sub
 
@@ -241,7 +241,7 @@ Sub Test6_ErrorHandling()
     ' 失敗をシミュレート
     Call LogOrderFailure_Standalone(signal("signal_id"), signal("ticker"), signal("action"), "Test: Simulated failure")
 
-    Debug.Print "✅ Test 6 passed (check OrderLog sheet for failure)"
+    Debug.Print "[OK] Test 6 passed (check OrderLog sheet for failure)"
     Debug.Print ""
 End Sub
 
@@ -303,18 +303,18 @@ Sub ProcessSignalStandalone(signal As Dictionary)
 
     If orderId <> "" Then
         ' 成功
-        Debug.Print "  ✅ Order executed: " & orderId
+        Debug.Print "  [OK] Order executed: " & orderId
         Call LogOrderSuccess_Standalone(signal("signal_id"), signal("ticker"), signal("action"), orderId)
     Else
         ' 失敗
-        Debug.Print "  ❌ Order failed"
+        Debug.Print "  [ERROR] Order failed"
         Call LogOrderFailure_Standalone(signal("signal_id"), signal("ticker"), signal("action"), "Mock execution failed")
     End If
 
     Exit Sub
 
 ErrorHandler:
-    Debug.Print "  ❌ Error: " & Err.Description
+    Debug.Print "  [ERROR] Error: " & Err.Description
 End Sub
 
 ' ========================================
@@ -403,21 +403,21 @@ Sub QuickTest_SingleSignal()
     '
     ' クイックテスト: 1つのシグナル
     '
-    Debug.Print "🧪 Quick Test: Single Signal"
+    Debug.Print "[TEST] Quick Test: Single Signal"
 
     Dim signal As Dictionary
     Set signal = CreateMockSignal("7203", "buy", 100)
 
     Call ProcessSignalStandalone(signal)
 
-    Debug.Print "✅ Quick test completed"
+    Debug.Print "[OK] Quick test completed"
 End Sub
 
 Sub QuickTest_BuySell()
     '
     ' クイックテスト: 買い→売り
     '
-    Debug.Print "🧪 Quick Test: Buy -> Sell"
+    Debug.Print "[TEST] Quick Test: Buy -> Sell"
 
     ' 買い
     Dim buySignal As Dictionary
@@ -431,14 +431,14 @@ Sub QuickTest_BuySell()
     Set sellSignal = CreateMockSignal("7203", "sell", 100)
     Call ProcessSignalStandalone(sellSignal)
 
-    Debug.Print "✅ Quick test completed"
+    Debug.Print "[OK] Quick test completed"
 End Sub
 
 Sub QuickTest_MultipleOrders()
     '
     ' クイックテスト: 複数注文
     '
-    Debug.Print "🧪 Quick Test: Multiple Orders"
+    Debug.Print "[TEST] Quick Test: Multiple Orders"
 
     Dim tickers As Variant
     tickers = Array("7203", "6758", "9984")
@@ -452,7 +452,7 @@ Sub QuickTest_MultipleOrders()
         Application.Wait Now + TimeValue("00:00:01")
     Next i
 
-    Debug.Print "✅ Quick test completed"
+    Debug.Print "[OK] Quick test completed"
 End Sub
 
 ' ========================================
@@ -462,7 +462,7 @@ Sub PerformanceTest()
     '
     ' パフォーマンステスト: 大量シグナル処理
     '
-    Debug.Print "🚀 Performance Test: 50 signals"
+    Debug.Print "[PERF] Performance Test: 50 signals"
 
     Dim startTime As Double
     startTime = Timer
@@ -477,6 +477,6 @@ Sub PerformanceTest()
     Dim elapsedTime As Double
     elapsedTime = Timer - startTime
 
-    Debug.Print "✅ Processed 50 signals in " & Format(elapsedTime, "0.00") & " seconds"
+    Debug.Print "[OK] Processed 50 signals in " & Format(elapsedTime, "0.00") & " seconds"
     Debug.Print "Average: " & Format(elapsedTime / 50, "0.000") & " seconds per signal"
 End Sub

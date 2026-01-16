@@ -17,6 +17,7 @@ from app.services.cooldown import CooldownService
 from app.services.market_hours import MarketHoursService
 from app.services.risk_control import RiskControlService
 from app.services.csv_logger import CSVLoggerService
+from app.services.day_trading_check import DayTradingCheckService
 
 router = APIRouter()
 
@@ -128,6 +129,20 @@ async def receive_webhook(
                 status_code=400,
                 detail=f"Cannot sell {signal.quantity} shares of {signal.ticker}: Only {position.quantity} shares held"
             )
+
+    # 6.5. Day trading check (差金決済チェック)
+    day_trading_service = DayTradingCheckService(db)
+    day_trading_ok, day_trading_reason = day_trading_service.check_day_trading(
+        signal.ticker,
+        signal.action
+    )
+    if not day_trading_ok:
+        logger.warning(f"Signal rejected: Day trading violation for {signal.ticker}")
+        log_risk_violation("day_trading_violation", signal.ticker)
+        raise HTTPException(
+            status_code=400,
+            detail=f"差金決済違反: {day_trading_reason}"
+        )
 
     # 7. Generate checksum
     checksum = generate_checksum(signal, signal_id)
