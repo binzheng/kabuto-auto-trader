@@ -62,7 +62,7 @@ market_hours:
   timezone: "Asia/Tokyo"
   safe_trading_windows:
     morning:
-      start: "09:30"
+      start: "09:00"
       end: "11:30"
     afternoon:
       start: "12:30"

@@ -12,6 +12,7 @@ from app.services.kill_switch import KillSwitchService
 from app.services.market_hours import MarketHoursService
 from app.services.cooldown import CooldownService
 from app.services.blacklist import BlacklistService
+from app.services.day_trading_check import DayTradingCheckService
 from app.models import Position, DailyStats
 from app.core.config import get_settings
 
@@ -30,6 +31,7 @@ class PreOrderValidationService:
         self.market_hours = MarketHoursService()
         self.cooldown = CooldownService()
         self.blacklist = BlacklistService(db)
+        self.day_trading_check = DayTradingCheckService(db)
 
     def validate_order(
         self,
@@ -72,6 +74,15 @@ class PreOrderValidationService:
             checks["parameters"] = "BLOCKED"
             return False, f"parameter_validation_failed: {', '.join(param_errors)}", checks
         checks["parameters"] = "OK"
+
+        # === Level 3.5: Day Trading Check (差金決済チェック) ===
+        day_trading_ok, day_trading_reason = self.day_trading_check.check_day_trading(
+            ticker, action
+        )
+        if not day_trading_ok:
+            checks["day_trading"] = "BLOCKED"
+            return False, f"day_trading_violation: {day_trading_reason}", checks
+        checks["day_trading"] = "OK"
 
         # === Level 4: Daily Limits Check ===
         daily_limit_ok, daily_limit_reason = self._check_daily_limits(action)

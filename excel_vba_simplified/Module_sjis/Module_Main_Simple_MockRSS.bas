@@ -359,6 +359,51 @@ Function ExecuteRSSOrder(signal As Dictionary) As String
             ", setOrderPrice=" & CStr(setOrderPrice) & _
             ", setExecutionCondition=" & CStr(setExecutionCondition) & _
             ", setOrderExpiry=" & CStr(setOrderExpiry))
+        Dim excelFormulaCall As String
+        excelFormulaCall = "=RssStockOrder_v(" & _
+            CStr(orderIdNum) & ", " & _
+            """" & ticker & """, " & _
+            """" & sideCode & """, " & _
+            """" & orderType & """, " & _
+            """" & sorType & """, " & _
+            CStr(quantity) & ", " & _
+            """" & priceType & """, " & _
+            CStr(orderPrice) & ", " & _
+            """" & execCondition & """, " & _
+            """" & orderExpiry & """, " & _
+            """" & accountType & """, " & _
+            IIf(reverseConditionPrice = "", "", CStr(reverseConditionPrice)) & ", " & _
+            """" & reverseConditionType & """, " & _
+            """" & reversePriceType & """, " & _
+            IIf(reversePrice = "", "", CStr(reversePrice)) & ", " & _
+            """" & setOrderType & """, " & _
+            IIf(setOrderPrice = "", "", CStr(setOrderPrice)) & ", " & _
+            """" & setExecutionCondition & """, " & _
+            """" & setOrderExpiry & """")"
+        Call LogDebug(excelFormulaCall)
+
+        Dim excelFunctionCall As String
+        excelFunctionCall = "Application.Run(""RssStockOrder_v"", " & _
+            CStr(orderIdNum) & ", " & _
+            """" & ticker & """, " & _
+            """" & sideCode & """, " & _
+            """" & orderType & """, " & _
+            """" & sorType & """, " & _
+            CStr(quantity) & ", " & _
+            """" & priceType & """, " & _
+            CStr(orderPrice) & ", " & _
+            """" & execCondition & """, " & _
+            """" & orderExpiry & """, " & _
+            """" & accountType & """, " & _
+            IIf(reverseConditionPrice = "", """""", CStr(reverseConditionPrice)) & ", " & _
+            IIf(reverseConditionType = "", """""", """" & reverseConditionType & """") & ", " & _
+            IIf(reversePriceType = "", """""", """" & reversePriceType & """") & ", " & _
+            IIf(reversePrice = "", """""", CStr(reversePrice)) & ", " & _
+            """" & setOrderType & """, " & _
+            IIf(setOrderPrice = "", """""", CStr(setOrderPrice)) & ", " & _
+            """" & setExecutionCondition & """, " & _
+            """" & setOrderExpiry & """")"
+        Call LogDebug("Excel function call: " & excelFunctionCall)
 
         rssResult = Application.Run("RssStockOrder_v", _
             orderIdNum, _
