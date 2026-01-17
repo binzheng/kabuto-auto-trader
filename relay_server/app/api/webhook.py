@@ -69,6 +69,50 @@ async def receive_webhook(
         logger.warning(f"Invalid passphrase from {request.client.host}")
         raise HTTPException(status_code=401, detail="Invalid passphrase")
 
+    # TEST MODE: Skip all validations and redis operations
+    if settings.test_mode.enabled:
+        logger.info(f"[TEST MODE] Receiving signal: {signal.action} {signal.ticker}")
+
+        # Generate signal ID
+        signal_id = generate_signal_id(signal)
+        checksum = generate_checksum(signal, signal_id)
+
+        # Round stop_loss and take_profit to integers (Japanese stocks use integer prices)
+        stop_loss_int = round(signal.stop_loss) if signal.stop_loss is not None else None
+        take_profit_int = round(signal.take_profit) if signal.take_profit is not None else None
+
+        # Create signal in database (PENDING state)
+        expires_at = datetime.now() + timedelta(minutes=settings.signal.expiration_minutes)
+        db_signal = Signal(
+            signal_id=signal_id,
+            action=signal.action,
+            ticker=signal.ticker,
+            quantity=signal.quantity,
+            price=signal.price,
+            entry_price=signal.entry_price,
+            stop_loss=stop_loss_int,
+            take_profit=take_profit_int,
+            atr=signal.atr,
+            rr_ratio=signal.rr_ratio,
+            rsi=signal.rsi,
+            state=SignalState.PENDING,
+            checksum=checksum,
+            passphrase_valid=True,
+            expires_at=expires_at
+        )
+        db.add(db_signal)
+        db.commit()
+        db.refresh(db_signal)
+
+        logger.info(f"[TEST MODE] Signal {signal_id} created - NO VALIDATIONS, NO REDIS")
+
+        return WebhookResponse(
+            status="success",
+            signal_id=signal_id,
+            message="[TEST MODE] Signal received and queued (no validations, no redis)",
+            timestamp=datetime.now()
+        )
+
     # 2. Deduplication check
     dedup_service = DeduplicationService()
     idempotency_key = dedup_service.generate_idempotency_key(
@@ -150,6 +194,10 @@ async def receive_webhook(
     # 8. Create signal in database
     expires_at = datetime.now() + timedelta(minutes=settings.signal.expiration_minutes)
 
+    # Round stop_loss and take_profit to integers (Japanese stocks use integer prices)
+    stop_loss_int = round(signal.stop_loss) if signal.stop_loss is not None else None
+    take_profit_int = round(signal.take_profit) if signal.take_profit is not None else None
+
     db_signal = Signal(
         signal_id=signal_id,
         action=signal.action,
@@ -157,8 +205,8 @@ async def receive_webhook(
         quantity=signal.quantity,
         price=signal.price,
         entry_price=signal.entry_price,
-        stop_loss=signal.stop_loss,
-        take_profit=signal.take_profit,
+        stop_loss=stop_loss_int,
+        take_profit=take_profit_int,
         atr=signal.atr,
         rr_ratio=signal.rr_ratio,
         rsi=signal.rsi,
@@ -182,8 +230,8 @@ async def receive_webhook(
             "quantity": signal.quantity,
             "price": signal.price,
             "entry_price": signal.entry_price,
-            "stop_loss": signal.stop_loss,
-            "take_profit": signal.take_profit,
+            "stop_loss": stop_loss_int,
+            "take_profit": take_profit_int,
             "atr": signal.atr,
             "rr_ratio": signal.rr_ratio,
             "rsi": signal.rsi,

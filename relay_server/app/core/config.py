@@ -35,6 +35,10 @@ class RedisConfig(BaseModel):
     decode_responses: bool = True
 
 
+class TestModeConfig(BaseModel):
+    enabled: bool = False
+
+
 class RiskControlConfig(BaseModel):
     max_total_exposure: int = 1000000
     max_position_per_ticker: int = 200000
@@ -111,6 +115,7 @@ class Settings(BaseSettings):
     security: SecurityConfig
     database: DatabaseConfig
     redis: RedisConfig
+    test_mode: TestModeConfig
     risk_control: RiskControlConfig
     cooldown: CooldownConfig
     signal: SignalConfig

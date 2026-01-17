@@ -2,12 +2,13 @@
 Final Risk Control Service - Last line of defense
 """
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from datetime import datetime, date
 from typing import Dict, Optional
 
 from app.models import Position, DailyStats, Signal
 from app.core.config import get_settings
-from app.core.logging import log_risk_violation
+from app.core.logging import log_risk_violation, logger
 
 
 class RiskControlService:
@@ -180,22 +181,39 @@ class RiskControlService:
     ):
         """Update daily statistics"""
         today = date.today()
+
+        # Get or create daily stats record (with retry on UNIQUE constraint violation)
         stats = self.db.query(DailyStats).filter(
             DailyStats.date == today
         ).first()
 
         if not stats:
-            stats = DailyStats(
-                date=today,
-                entry_count=0,
-                exit_count=0,
-                total_trades=0,
-                total_pnl=0,
-                total_commission=0,
-                consecutive_losses=0,
-                consecutive_wins=0
-            )
-            self.db.add(stats)
+            # Use INSERT OR IGNORE for SQLite to handle race conditions
+            from sqlalchemy import text
+            from datetime import datetime as dt
+            try:
+                # Try to insert with OR IGNORE (SQLite specific - won't raise error if exists)
+                now = dt.now()
+                self.db.execute(text("""
+                    INSERT OR IGNORE INTO daily_stats
+                    (date, entry_count, exit_count, total_trades, error_count, total_pnl, total_commission, consecutive_losses, consecutive_wins, created_at, updated_at)
+                    VALUES (:date, 0, 0, 0, 0, 0.0, 0.0, 0, 0, :now, NULL)
+                """), {"date": today, "now": now})
+                # Flush to sync with DB (OR IGNORE won't raise error)
+                self.db.flush()
+                logger.info(f"Executed INSERT OR IGNORE for daily_stats {today}")
+            except Exception as e:
+                logger.warning(f"Error in INSERT OR IGNORE: {e}")
+                # Continue anyway - query might still find it
+
+            # Query again to get the record (either newly created or existing)
+            stats = self.db.query(DailyStats).filter(
+                DailyStats.date == today
+            ).first()
+
+            if not stats:
+                logger.error(f"Cannot find or create daily_stats for {today} even after INSERT OR IGNORE, skipping stats update")
+                return  # Skip stats update rather than crash
 
         # Update counts
         if action == "buy":
@@ -218,4 +236,4 @@ class RiskControlService:
                     stats.consecutive_losses += 1
                     stats.consecutive_wins = 0
 
-        self.db.commit()
+        # Note: commit is called by the caller (signals.py)
