@@ -1,12 +1,12 @@
 Attribute VB_Name = "Module_Main_Simple"
 '
 ' Kabuto Auto Trader - Simplified Main Module
-' シンプルなポ???リングループ（注??実行に特化??
+' シンプルなポーリングループ（注文実行に特化）
 '
 ' 変更点:
-' - 5段階セーフティチェ??クは削除???Relay Serverで実行済み???
-' - シグナル処??はRelay Serverで完??
-' - Excel側はRSS注??実行???み
+' - 5段階セーフティチェックは削除（Relay Serverで実行済み）
+' - シグナル処理はRelay Serverで完結
+' - Excel側はRSS注文実行のみ
 '
 
 Option Explicit
@@ -20,7 +20,7 @@ Private SuccessCount As Long
 Private FailureCount As Long
 
 ' ========================================
-' メインループ開始（非同期???
+' メインループ開始（非同期実行）
 ' ========================================
 Sub StartPolling()
     On Error GoTo ErrorHandler
@@ -42,11 +42,11 @@ Sub StartPolling()
     Call LogInfo("All validation done by Relay Server")
     Call LogInfo("Async mode: Excel remains responsive during execution")
 
-    ' ス?ータスダ?シュ???ドを初期?
+    ' ステータスダッシュボードを初期化
     Call InitializeStatusDashboard
     Call UpdateStatusDashboard
 
-    ' 最??????リングをスケジュール?即座に実???
+    ' 最初のポーリングをスケジュール（即座に実行）
     Call ScheduleNextPoll
 
     Exit Sub
@@ -58,7 +58,7 @@ ErrorHandler:
 End Sub
 
 ' ========================================
-' ???リング停止
+' ポーリング停止
 ' ========================================
 Sub StopPolling()
     On Error Resume Next
@@ -66,67 +66,67 @@ Sub StopPolling()
     IsRunning = False
     Call LogInfo("Stopping polling...")
 
-    ' スケジュールされた次??????リングをキャンセル
+    ' スケジュールされた次回ポーリングをキャンセル
     If NextScheduledTime <> 0 Then
         Application.OnTime NextScheduledTime, "ScheduledPoll", , False
         NextScheduledTime = 0
     End If
 
-    ' ス?ータスダ?シュ???ドを更新
+    ' ステータスダッシュボードを更新
     Call UpdateStatusDashboard
 
     Call LogSectionEnd
 End Sub
 
 ' ========================================
-' 次????リングをスケジュール
+' 次回ポーリングをスケジュール
 ' ========================================
 Private Sub ScheduleNextPoll()
     On Error Resume Next
 
     If Not IsRunning Then Exit Sub
 
-    ' 5秒後にScheduledPollを???
+    ' 5秒後にScheduledPollを実行
     NextScheduledTime = Now + TimeValue("00:00:05")
     Application.OnTime NextScheduledTime, "ScheduledPoll"
 End Sub
 
 ' ========================================
-' スケジュールされ????リング???
+' スケジュールされたポーリング実行
 ' ========================================
 Sub ScheduledPoll()
     On Error GoTo ErrorHandler
 
-    ' 停止フラグが立って?たら???
+    ' 停止フラグが立っていたら終了
     If Not IsRunning Then
         Call LogInfo("Polling stopped by flag")
         Exit Sub
     End If
 
-    ' ス?ータスダ?シュ???ドを更新?時刻更新??
+    ' ステータスダッシュボードを更新（時刻更新含む）
     Call UpdateStatusDashboard
 
-    ' シグナルを取得して???
+    ' シグナルを取得して実行
     Call PollAndExecuteSignals
 
-    ' 次??????リングをスケジュール
+    ' 次回ポーリングをスケジュール
     Call ScheduleNextPoll
 
     Exit Sub
 
 ErrorHandler:
     Call LogError("Error in ScheduledPoll: " & Err.Description)
-    ' エラーが発生しても継続す?
+    ' エラーが発生しても継続する
     Call ScheduleNextPoll
 End Sub
 
 ' ========================================
-' シグナル取得と???
+' シグナル取得と実行
 ' ========================================
 Sub PollAndExecuteSignals()
     On Error Resume Next
 
-    ' Relay Serverから検証済みシグナルを取?
+    ' Relay Serverから検証済みシグナルを取得
     Dim signals As Collection
     Set signals = API_GetPendingSignals()
 
@@ -140,7 +140,7 @@ Sub PollAndExecuteSignals()
 
     Call LogInfo("Received " & signals.Count & " validated signal(s) from Relay Server")
 
-    ' ?シグナル????
+    ' 各シグナルを処理
     Dim i As Integer
     For i = 1 To signals.Count
         Dim signal As Object
@@ -153,18 +153,18 @@ Sub PollAndExecuteSignals()
         ' ACK送信
         Call API_AcknowledgeSignal(signal("signal_id"), signal("checksum"))
 
-        ' 注?実???Relay Serverで検証済み??
+        ' 注文実行（Relay Serverで検証済み）
         Call ExecuteValidatedSignal(signal)
     Next i
 End Sub
 
 ' ========================================
-' 検証済みシグナルの???
+' 検証済みシグナルの実行
 ' ========================================
 Sub ExecuteValidatedSignal(signal As Object)
     '
-    ' Relay Serverで5段階セーフティ検証済みのシグナルを???
-    ' Excel側では追?の検証な?
+    ' Relay Serverで5段階セーフティ検証済みのシグナルを実行
+    ' Excel側では追加の検証なし
     '
     On Error GoTo ErrorHandler
 
@@ -186,16 +186,16 @@ Sub ExecuteValidatedSignal(signal As Object)
     logQuantity = signal("quantity")
     On Error GoTo ErrorHandler
 
-    ' RSS注????
+    ' RSS注文実行
     Dim orderId As String
     orderId = ExecuteRSSOrder(signal)
 
     If orderId <> "" Then
-        ' 成功 - Relay Serverに報?
+        ' 成功 - Relay Serverに報告
         Call LogSuccess("Order executed successfully: " & orderId)
         SuccessCount = SuccessCount + 1
 
-        ' 実行価格を取???entry_priceを使用??
+        ' 実行価格を取得（entry_priceを使用）
         Dim executionPrice As Double
         executionPrice = CDbl(signal("entry_price"))
 
@@ -209,7 +209,7 @@ Sub ExecuteValidatedSignal(signal As Object)
         ' ローカルログ記録
         Call LogOrderSuccess(signal("signal_id"), signal("ticker"), signal("action"), orderId, logPrice, logReverseConditionPrice, logReversePrice, logQuantity)
     Else
-        ' 失? - Relay Serverに報?
+        ' 失敗 - Relay Serverに報告
         Call LogError("Order execution failed")
         FailureCount = FailureCount + 1
 
@@ -228,15 +228,15 @@ ErrorHandler:
 End Sub
 
 ' ========================================
-' RSS注?実???RssStockOrder_v呼び出???
+' RSS注文実行（RssStockOrder_v呼び出し）
 ' ========================================
 Function ExecuteRSSOrder(signal As Object) As String
     '
-    ' MarketSpeed II RSS経由で注????
+    ' MarketSpeed II RSS経由で注文実行
     '
     On Error GoTo ErrorHandler
 
-    ' パラメータ???
+    ' パラメータ取得
     Dim ticker As String
     Dim side As Integer
     Dim quantity As Long
@@ -245,7 +245,7 @@ Function ExecuteRSSOrder(signal As Object) As String
     ticker = CStr(signal("ticker"))
     Call LogDebug("Ticker: " & ticker)
 
-    ' action???示?に????として???
+    ' actionを小文字の文字列として取得
     Call LogDebug("Parsing action...")
     Dim action As String
     action = LCase(CStr(signal("action")))
@@ -262,28 +262,28 @@ Function ExecuteRSSOrder(signal As Object) As String
     quantity = CLng(signal("quantity"))
     Call LogDebug("Quantity: " & quantity)
 
-    ' 注文ID????
+    ' 注文ID生成
     Dim orderId As String
     orderId = "ORD_" & Format(Now, "yyyymmddhhnnss") & "_" & Right("000000" & ticker, 6)
     Call LogDebug("Order ID: " & orderId)
 
-    ' RssStockOrder_v呼び出?
+    ' RssStockOrder_v呼び出し
     Call LogDebug("Calling RssStockOrder_v...")
     Call LogDebug("Parameters: orderId=" & orderId & ", ticker=" & ticker & ", side=" & side & ", quantity=" & quantity)
 
-    ' ?ストモード確?
+    ' テストモード確認
     Dim testMode As String
     testMode = GetConfig("TEST_MODE")
 
     Dim rssResult As Variant
 
     If UCase(testMode) = "TRUE" Then
-        ' ?ストモー?: モ?ク???
+        ' テストモード: モック実行
         Call LogInfo("TEST MODE: Simulating RssStockOrder_v call")
         rssResult = 0  ' 成功を返す
     Else
-        ' 本番モー?: 実際のRSS呼び出?
-        ' tickerをLong型に変換?日本の証券コー???数値??
+        ' 本番モード: 実際のRSS呼び出し
+        ' tickerをLong型に変換（日本の証券コードは数値）
 
         Dim orderIdNum As Long
 
@@ -317,46 +317,46 @@ Function ExecuteRSSOrder(signal As Object) As String
         sorType = "0"
 
 
-        ' 価格タイプ???判定??"market" なら???行、それ以外?????値???
+        ' 価格タイプを判定（"market" ならAPIコード"1"、それ以外は"0"）
         Dim priceType As String
         Dim priceStr As String
         priceStr = LCase(CStr(signal("price")))
 
         If priceStr = "market" Then
-            priceType = "1"  ' ??値
+            priceType = "1"  ' market指定
         Else
-            priceType = "0"  ' 成??
+            priceType = "0"  ' 価格指定
         End If
         Call LogDebug("Price Type: " & priceType & " (" & priceStr & ")")
 
         Dim orderPrice As Double
         If priceType = "0" Then
-            ' 成行???場合???価格??0に設??
+            ' priceType=0の場合は価格を0に設定
             orderPrice = 0
         Else
-            ' ??値の場合???entry_priceを使用
+            ' priceType=1の場合はentry_priceを使用
             orderPrice = CDbl(signal("entry_price"))
         End If
         Call LogDebug("Order Price: " & orderPrice)
 
 
 
-        ' 実行条件をConfigシートから取得（デフォル??: "1" = 無条件???
+        ' 実行条件をConfigシートから取得（デフォルト: "1" = 無条件）
         Dim execCondition As String
         execCondition = GetConfig("EXEC_CONDITION")
         If execCondition = "" Then
-            execCondition = "1"  ' ??フォル??: 無条件
+            execCondition = "1"  ' デフォルト: 無条件
         End If
         Call LogDebug("Exec Condition: " & execCondition)
 
         Dim orderExpiry As String
         orderExpiry = ""
 
-        ' 口座区??をConfigシートから取得（デフォル??: "2" = 特定口座???
+        ' 口座区分をConfigシートから取得（デフォルト: "2" = 特定口座）
         Dim accountType As String
         accountType = GetConfig("ACCOUNT_TYPE")
         If accountType = "" Then
-            accountType = "2"  ' ??フォル??: 特定口座
+            accountType = "2"  ' デフォルト: 特定口座
         End If
         Call LogDebug("Account Type: " & accountType)
 
@@ -459,7 +459,7 @@ Function ExecuteRSSOrder(signal As Object) As String
 
     End If
 
-    ' 結果判?
+' 結果判定
     Call LogDebug("RssStockOrder_v completed, checking result...")
 
     If IsError(rssResult) Then
@@ -527,6 +527,28 @@ Function ExecuteRSSOrder(signal As Object) As String
                 ", execCondition=" & CStr(execCondition) & _
                 ", orderExpiry=" & CStr(orderExpiry) & _
                 ", accountType=" & CStr(accountType))
+            
+            excelFormulaCall = "=RssStockOrder_v(" & _
+                CStr(profitOrderIdNum) & ", " & _
+                """" & ticker & """, " & _
+                """" & profitSideCode & """, " & _
+                """" & profitOrderType & """, " & _
+                """" & sorType & """, " & _
+                CStr(quantity) & ", " & _
+                """" & profitPriceType & """, " & _
+                CStr(profitOrderPrice) & ", " & _
+                """" & execCondition & """, " & _
+                """" & orderExpiry & """, " & _
+                """" & accountType & """, " & _
+                IIf(profitReverseConditionPrice = "", "", CStr(profitReverseConditionPrice)) & ", " & _
+                """" & profitReverseConditionType & """, " & _
+                """" & profitReversePriceType & """, " & _
+                IIf(profitReversePrice = "", "", CStr(profitReversePrice)) & ", " & _
+                """" & profitSetOrderType & """, " & _
+                IIf(profitSetOrderPrice = "", "", CStr(profitSetOrderPrice)) & ", " & _
+                """" & profitSetExecutionCondition & """, " & _
+                """" & profitSetOrderExpiry & """)"
+            Call LogDebug(excelFormulaCall)
 
             Dim profitResult As Variant
             profitResult = Application.Run("RssStockOrder_v", _
@@ -560,7 +582,7 @@ Function ExecuteRSSOrder(signal As Object) As String
         End If
         ExecuteRSSOrder = orderId
     Else
-        ' 失?
+        ' 失敗
         Call LogError("RssStockOrder_v failed with code: " & CStr(rssResult))
         ExecuteRSSOrder = ""
     End If
@@ -573,7 +595,7 @@ ErrorHandler:
 End Function
 
 ' ========================================
-' ローカルログ記録??????
+' ローカルログ記録（成功時）
 ' ========================================
 Sub LogOrderSuccess(signalId As String, ticker As String, action As String, orderId As String, price As Variant, reverseConditionPrice As Variant, reversePrice As Variant, quantity As Variant)
     On Error Resume Next
@@ -598,7 +620,7 @@ Sub LogOrderSuccess(signalId As String, ticker As String, action As String, orde
 End Sub
 
 ' ========================================
-' ローカルログ記録?失???
+' ローカルログ記録（失敗時）
 ' ========================================
 Sub LogOrderFailure(signalId As String, ticker As String, action As String, reason As String, price As Variant, reverseConditionPrice As Variant, reversePrice As Variant, quantity As Variant)
     On Error Resume Next
@@ -623,7 +645,7 @@ Sub LogOrderFailure(signalId As String, ticker As String, action As String, reas
 End Sub
 
 ' ========================================
-' ス?ータスダ?シュ?????????
+' ステータスダッシュボード初期化
 ' ========================================
 Sub InitializeStatusDashboard()
     On Error Resume Next
@@ -631,7 +653,7 @@ Sub InitializeStatusDashboard()
     Dim ws As Worksheet
     Set ws = ThisWorkbook.Sheets("Dashboard")
 
-    ' ヘッダー設?
+    ' ヘッダー設定
     With ws.Range("A1:B1")
         .Merge
         .Value = "Kabuto Auto Trader - Status"
@@ -659,13 +681,13 @@ Sub InitializeStatusDashboard()
         .HorizontalAlignment = xlRight
     End With
 
-    ' ???調整
+    ' 列幅調整
     ws.Columns("A:A").ColumnWidth = 15
     ws.Columns("B:B").ColumnWidth = 25
 End Sub
 
 ' ========================================
-' ス?ータスダ?シュ???ド更新
+' ステータスダッシュボード更新
 ' ========================================
 Sub UpdateStatusDashboard()
     On Error Resume Next
@@ -705,7 +727,7 @@ Sub UpdateStatusDashboard()
     ' Running Time
     If IsRunning And StartTime > 0 Then
         Dim elapsed As Double
-        elapsed = (Now - StartTime) * 24 * 60 ' ????
+        elapsed = (Now - StartTime) * 24 * 60 ' 分換算
         Dim hours As Long, minutes As Long
         hours = Int(elapsed / 60)
         minutes = elapsed Mod 60
@@ -756,7 +778,7 @@ Sub UpdateStatusDashboard()
 End Sub
 
 ' ========================================
-' ???????????????????
+' ステータス表示を直接更新
 ' ========================================
 Sub UpdateStatusDisplay(statusText As String, backColor As Long)
     On Error Resume Next
