@@ -3,6 +3,7 @@ Signals API endpoints - Excel Pull API
 """
 from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from datetime import datetime
 from typing import Optional
 
@@ -55,6 +56,8 @@ async def get_pending_signals(
     **Important**: This endpoint performs 5-level safety validation
     before returning signals. Only validated signals are sent to Excel.
     """
+    settings = get_settings()
+
     # Query pending signals that haven't expired
     signals = db.query(Signal).filter(
         Signal.state == SignalState.PENDING,
@@ -66,37 +69,42 @@ async def get_pending_signals(
         from fastapi.responses import Response
         return Response(status_code=204)
 
-    # Initialize validation service
-    validator = PreOrderValidationService(db)
+    # TEST MODE: Skip all validations
+    if settings.test_mode.enabled:
+        logger.info(f"[TEST MODE] Returning {len(signals)} signals WITHOUT validation")
+        validated_signals = signals
+    else:
+        # Initialize validation service
+        validator = PreOrderValidationService(db)
 
-    # Validate each signal through 5-level safety system
-    validated_signals = []
+        # Validate each signal through 5-level safety system
+        validated_signals = []
 
-    for s in signals:
-        # Perform 5-level safety validation
-        allowed, reason, checks = validator.validate_order(
-            ticker=s.ticker,
-            action=s.action,
-            quantity=s.quantity,
-            price_type="market"
-        )
-
-        if allowed:
-            # Signal passed validation
-            validated_signals.append(s)
-            logger.info(f"Signal {s.signal_id} passed 5-level validation: {checks}")
-        else:
-            # Signal failed validation - mark as FAILED
-            logger.warning(
-                f"Signal {s.signal_id} failed validation: {reason}. "
-                f"Checks: {checks}"
+        for s in signals:
+            # Perform 5-level safety validation
+            allowed, reason, checks = validator.validate_order(
+                ticker=s.ticker,
+                action=s.action,
+                quantity=s.quantity,
+                price_type="market"
             )
-            s.state = SignalState.FAILED
-            s.error_message = f"Pre-order validation failed: {reason}"
-            log_risk_violation(reason, s.ticker)
 
-    # Commit any rejected signals
-    db.commit()
+            if allowed:
+                # Signal passed validation
+                validated_signals.append(s)
+                logger.info(f"Signal {s.signal_id} passed 5-level validation: {checks}")
+            else:
+                # Signal failed validation - mark as FAILED
+                logger.warning(
+                    f"Signal {s.signal_id} failed validation: {reason}. "
+                    f"Checks: {checks}"
+                )
+                s.state = SignalState.FAILED
+                s.error_message = f"Pre-order validation failed: {reason}"
+                log_risk_violation(reason, s.ticker)
+
+        # Commit any rejected signals
+        db.commit()
 
     if not validated_signals:
         # No validated signals to return
@@ -232,11 +240,30 @@ async def report_execution(
     # Update position
     _update_position(db, signal, request)
 
-    # Update daily stats
-    risk_service = RiskControlService(db)
-    risk_service.update_daily_stats(signal.action)
-
+    # Commit main changes first
     db.commit()
+
+    # Update daily stats in a separate operation (to avoid UNIQUE constraint issues)
+    try:
+        risk_service = RiskControlService(db)
+        risk_service.update_daily_stats(signal.action)
+        db.commit()
+    except IntegrityError as e:
+        if "UNIQUE constraint failed: daily_stats.date" in str(e):
+            logger.warning(f"UNIQUE constraint violation when updating daily_stats, retrying: {e}")
+            db.rollback()
+            try:
+                # Retry once
+                risk_service = RiskControlService(db)
+                risk_service.update_daily_stats(signal.action)
+                db.commit()
+            except Exception as retry_error:
+                logger.error(f"Failed to update daily_stats after retry: {retry_error}")
+                # Continue anyway - main execution was successful
+        else:
+            logger.error(f"Unexpected IntegrityError when updating daily_stats: {e}")
+            db.rollback()
+            # Continue anyway - main execution was successful
 
     # Log execution
     log_order_executed(

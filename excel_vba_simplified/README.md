@@ -159,6 +159,8 @@ python app/main.py
   - `API_BASE_URL` → `http://localhost:5000`
   - `API_KEY` → `your_api_key_here`
   - `CLIENT_ID` → `excel_vba_01`
+  - `ACCOUNT_TYPE` → `2` (口座区分: 1=一般, 2=特定, 3=NISA)
+  - `EXEC_CONDITION` → `1` (実行条件: 1=無条件, 2=寄付, 3=引け, 4=不成, 5=IOC, 6=LOO, 7=LOC)
 
 - **OrderLog**: 注文ログ
   - A列: Timestamp

@@ -29,6 +29,10 @@ atrSlMultiplier = input.float(2.0, "ストップロス倍率", minval=0.5, step=
 atrTpMultiplier = input.float(4.0, "テイクプロフィット倍率", minval=1.0, step=0.1, group="ATR設定")
 minRrRatio = input.float(1.5, "最低リスクリワード比", minval=1.0, step=0.1, group="ATR設定")
 
+// --- 最小値幅設定（手数料対策） ---
+minProfitPercent = input.float(1.0, "最小利益目標（%）", minval=0.5, step=0.1, group="ATR設定", tooltip="手数料を考慮した最小利益幅。ATRベースより小さい場合はこの値を使用")
+minStopPercent = input.float(0.5, "最小ストップロス（%）", minval=0.1, step=0.1, group="ATR設定", tooltip="最小ストップロス幅")
+
 // --- リスク管理 ---
 maxDailyEntries = input.int(3, "1日最大エントリー数", minval=1, maxval=10, group="リスク管理")
 cooldownMinutes = input.int(30, "クールダウン時間（分）", minval=0, group="リスク管理")
@@ -188,8 +192,21 @@ longSignal = allConditionsMet and allRiskChecksPassed and strategy.position_size
 if longSignal
     // エントリー価格とSL/TPを計算
     entryPrice := close
-    stopLossPrice := entryPrice - (atr * atrSlMultiplier)
-    takeProfitPrice := entryPrice + (atr * atrTpMultiplier)
+
+    // ATRベースのSL/TP
+    atrBasedStopLoss = atr * atrSlMultiplier
+    atrBasedTakeProfit = atr * atrTpMultiplier
+
+    // パーセンテージベースの最小値幅
+    minStopAmount = entryPrice * (minStopPercent / 100)
+    minProfitAmount = entryPrice * (minProfitPercent / 100)
+
+    // ATRベースと最小値幅のうち大きい方を使用
+    stopLossAmount = math.max(atrBasedStopLoss, minStopAmount)
+    takeProfitAmount = math.max(atrBasedTakeProfit, minProfitAmount)
+
+    stopLossPrice := entryPrice - stopLossAmount
+    takeProfitPrice := entryPrice + takeProfitAmount
 
     // リスクリワード比率の計算
     riskAmount = entryPrice - stopLossPrice
@@ -205,11 +222,13 @@ if longSignal
         enteredToday := true
         lastEntryTime := time
 
-        // エントリーログ
-        log.info("✅ エントリー: " + str.tostring(entryPrice, "#.##") +
-                 " | SL: " + str.tostring(stopLossPrice, "#.##") +
-                 " | TP: " + str.tostring(takeProfitPrice, "#.##") +
-                 " | RR: " + str.tostring(actualRrRatio, "#.##") + ":1")
+        // エントリーログ（100株での利益見込みも表示）
+        expectedProfit = takeProfitAmount * 100
+        expectedLoss = stopLossAmount * 100
+        log.info("✅ エントリー: " + str.tostring(entryPrice, "#.#") +
+                 " | SL: " + str.tostring(stopLossPrice, "#.#") + " (-¥" + str.tostring(expectedLoss, "#,###") + ")" +
+                 " | TP: " + str.tostring(takeProfitPrice, "#.#") + " (+¥" + str.tostring(expectedProfit, "#,###") + ")" +
+                 " | RR: " + str.tostring(actualRrRatio, "#.#") + ":1")
 
 // ============================================================================
 // エグジットロジック
@@ -244,25 +263,25 @@ if strategy.position_size == 0 and strategy.position_size[1] > 0
 
 // エントリーアラート
 if longSignal and actualRrRatio >= minRrRatio
-    alertMessage = '{"action": "buy","ticker": "' + syminfo.ticker + '","quantity": 100,"price": "market","entry_price": ' + str.tostring(entryPrice, "#.##") + ',"stop_loss": ' + str.tostring(stopLossPrice, "#.##") + ',"take_profit": ' + str.tostring(takeProfitPrice, "#.##") + ',"atr": ' + str.tostring(atr, "#.##") + ',"rr_ratio": ' + str.tostring(actualRrRatio, "#.##") + ',"rsi": ' + str.tostring(rsi, "#.##") + ',"timestamp": "' + str.tostring(time) + '","passphrase": "' + webhookPassphrase + '"}'
+    alertMessage = '{"action": "buy","ticker": "' + syminfo.ticker + '","quantity": 100,"price": "market","entry_price": ' + str.tostring(entryPrice, "#.#") + ',"stop_loss": ' + str.tostring(stopLossPrice, "#.#") + ',"take_profit": ' + str.tostring(takeProfitPrice, "#.#") + ',"atr": ' + str.tostring(atr, "#.#") + ',"rr_ratio": ' + str.tostring(actualRrRatio, "#.#") + ',"rsi": ' + str.tostring(rsi, "#.#") + ',"timestamp": "' + str.tostring(time) + '","passphrase": "' + webhookPassphrase + '"}'
     alert(alertMessage, alert.freq_once_per_bar)
 
 // エグジットアラート（損切り）
 // Note: リレーサーバー側でポジション状態を確認
 if not na(stopLossPrice) and close <= stopLossPrice
-    alertMessage = '{"action": "sell","ticker": "' + syminfo.ticker + '","quantity": 100,"price": "market","exit_reason": "stop_loss","exit_price": ' + str.tostring(close, "#.##") + ',"timestamp": "' + str.tostring(time) + '","passphrase": "' + webhookPassphrase + '"}'
+    alertMessage = '{"action": "sell","ticker": "' + syminfo.ticker + '","quantity": 100,"price": "market","exit_reason": "stop_loss","exit_price": ' + str.tostring(close, "#.#") + ',"timestamp": "' + str.tostring(time) + '","passphrase": "' + webhookPassphrase + '"}'
     alert(alertMessage, alert.freq_once_per_bar)
 
 // エグジットアラート（利確）
 // Note: リレーサーバー側でポジション状態を確認
 if not na(takeProfitPrice) and close >= takeProfitPrice
-    alertMessage = '{"action": "sell","ticker": "' + syminfo.ticker + '","quantity": 100,"price": "market","exit_reason": "take_profit","exit_price": ' + str.tostring(close, "#.##") + ',"timestamp": "' + str.tostring(time) + '","passphrase": "' + webhookPassphrase + '"}'
+    alertMessage = '{"action": "sell","ticker": "' + syminfo.ticker + '","quantity": 100,"price": "market","exit_reason": "take_profit","exit_price": ' + str.tostring(close, "#.#") + ',"timestamp": "' + str.tostring(time) + '","passphrase": "' + webhookPassphrase + '"}'
     alert(alertMessage, alert.freq_once_per_bar)
 
 // 強制決済アラート
 // Note: リレーサーバー側でポジション状態を確認
 if isForceCloseTime
-    alertMessage = '{"action": "sell","ticker": "' + syminfo.ticker + '","quantity": 100,"price": "market","exit_reason": "market_close","exit_price": ' + str.tostring(close, "#.##") + ',"timestamp": "' + str.tostring(time) + '","passphrase": "' + webhookPassphrase + '"}'
+    alertMessage = '{"action": "sell","ticker": "' + syminfo.ticker + '","quantity": 100,"price": "market","exit_reason": "market_close","exit_price": ' + str.tostring(close, "#.#") + ',"timestamp": "' + str.tostring(time) + '","passphrase": "' + webhookPassphrase + '"}'
     alert(alertMessage, alert.freq_once_per_bar)
 
 // ============================================================================
@@ -289,7 +308,7 @@ plotshape(longSignal and actualRrRatio >= minRrRatio, "買いシグナル", styl
 // 情報パネル
 // ============================================================================
 
-var table infoPanel = table.new(position.top_right, 2, 10, border_width=1, border_color=color.gray, frame_width=1, frame_color=color.gray)
+var table infoPanel = table.new(position.top_right, 2, 12, border_width=1, border_color=color.gray, frame_width=1, frame_color=color.gray)
 
 if barstate.islast
     // ヘッダー
@@ -319,31 +338,42 @@ if barstate.islast
 
     // ATR
     table.cell(infoPanel, 0, 5, "ATR(14)", text_color=color.white)
-    table.cell(infoPanel, 1, 5, str.tostring(atr, "#.##"), text_color=color.white)
+    table.cell(infoPanel, 1, 5, str.tostring(atr, "#.#") + " (¥" + str.tostring(atr * 100, "#,###") + "/100株)", text_color=color.white)
+
+    // 最小利益目標
+    table.cell(infoPanel, 0, 6, "最小利益目標", text_color=color.white)
+    minProfitYen = close * (minProfitPercent / 100) * 100
+    table.cell(infoPanel, 1, 6, str.tostring(minProfitPercent, "#.#") + "% (¥" + str.tostring(minProfitYen, "#,###") + "/100株)", text_color=color.white)
 
     // RSI
-    table.cell(infoPanel, 0, 6, "RSI(14)", text_color=color.white)
+    table.cell(infoPanel, 0, 7, "RSI(14)", text_color=color.white)
     rsiColor = rsi > rsiUpper ? color.new(color.red, 30) : rsi < rsiLower ? color.new(color.orange, 30) : color.new(color.green, 30)
-    table.cell(infoPanel, 1, 6, str.tostring(rsi, "#.##"), bgcolor=rsiColor, text_color=color.white)
+    table.cell(infoPanel, 1, 7, str.tostring(rsi, "#.#"), bgcolor=rsiColor, text_color=color.white)
 
     // 出来高倍率
-    table.cell(infoPanel, 0, 7, "出来高倍率", text_color=color.white)
+    table.cell(infoPanel, 0, 8, "出来高倍率", text_color=color.white)
     volRatio = volume / volumeAvg
     volColor = volRatio >= volumeMultiplier ? color.new(color.green, 30) : color.new(color.gray, 30)
-    table.cell(infoPanel, 1, 7, str.tostring(volRatio, "#.##") + "x", bgcolor=volColor, text_color=color.white)
+    table.cell(infoPanel, 1, 8, str.tostring(volRatio, "#.#") + "x", bgcolor=volColor, text_color=color.white)
 
     // ポジション状態
-    table.cell(infoPanel, 0, 8, "ポジション", text_color=color.white)
+    table.cell(infoPanel, 0, 9, "ポジション", text_color=color.white)
     posStatus = strategy.position_size > 0 ? "保有中" : "なし"
     posColor = strategy.position_size > 0 ? color.new(color.blue, 30) : color.new(color.gray, 30)
-    table.cell(infoPanel, 1, 8, posStatus, bgcolor=posColor, text_color=color.white)
+    table.cell(infoPanel, 1, 9, posStatus, bgcolor=posColor, text_color=color.white)
+
+    // 期待利益（次回エントリー時）
+    table.cell(infoPanel, 0, 10, "期待利益（予測）", text_color=color.white)
+    expectedTpAmount = math.max(atr * atrTpMultiplier, close * (minProfitPercent / 100))
+    expectedTpYen = expectedTpAmount * 100
+    table.cell(infoPanel, 1, 10, "¥" + str.tostring(expectedTpYen, "#,###") + "/100株", text_color=color.white)
 
     // 総合判定
-    table.cell(infoPanel, 0, 9, "取引可否", text_color=color.white)
+    table.cell(infoPanel, 0, 11, "取引可否", text_color=color.white)
     canTrade = allRiskChecksPassed and strategy.position_size == 0
     tradeStatus = canTrade ? "✅" : "⏸️"
     tradeColor = canTrade ? color.new(color.green, 30) : color.new(color.red, 30)
-    table.cell(infoPanel, 1, 9, tradeStatus, bgcolor=tradeColor, text_color=color.white)
+    table.cell(infoPanel, 1, 11, tradeStatus, bgcolor=tradeColor, text_color=color.white)
 
 // ============================================================================
 // クールダウン表示（チャート上）
@@ -375,7 +405,7 @@ if barstate.islastconfirmedhistory
     log.info("総取引数: " + str.tostring(totalTrades))
     log.info("勝ちトレード: " + str.tostring(winningTrades))
     log.info("負けトレード: " + str.tostring(losingTrades))
-    log.info("勝率: " + str.tostring(winRate, "#.##") + "%")
+    log.info("勝率: " + str.tostring(winRate, "#.#") + "%")
     log.info("純利益: ¥" + str.tostring(strategy.netprofit, "#,###"))
     log.info("最大ドローダウン: ¥" + str.tostring(strategy.max_drawdown, "#,###"))
 

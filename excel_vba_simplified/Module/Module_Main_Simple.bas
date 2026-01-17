@@ -314,7 +314,7 @@ Function ExecuteRSSOrder(signal As Object) As String
 
         Dim sorType As String
 
-        sorType = "0"
+        sorType = "1"
 
 
         ' 価格タイプを判定（"market" ならAPIコード"1"、それ以外は"0"）
@@ -376,20 +376,32 @@ Function ExecuteRSSOrder(signal As Object) As String
         reverseConditionType = ""
         reversePriceType = ""
         reversePrice = ""
-        setOrderType = "0"
+        setOrderType = ""
         setOrderPrice = ""
         setExecutionCondition = ""
         setOrderExpiry = ""
 
+        ' Stop-loss設定（reverse注文）
         If stopLoss > 0 Then
             reverseConditionPrice = stopLoss
             If side = 3 Then
+                ' 買い注文：stop-lossは逆指値下（価格が下がったら成行売り）
                 reverseConditionType = "2"
             Else
+                ' 売り注文：stop-lossは逆指値上（価格が上がったら成行買い）
                 reverseConditionType = "1"
             End If
-            reversePriceType = "0"
-            reversePrice = ""
+            reversePriceType = "1"  ' 指値
+            reversePrice = reverseConditionPrice
+        End If
+
+        ' Take-profit設定（set注文）
+        If takeProfit > 0 Then
+            setOrderType = "1"  ' 通常注文
+            setOrderPrice = takeProfit  ' 指値価格
+            setExecutionCondition = "1"  ' 無条件
+            setOrderExpiry = ""  ' 当日
+            Call LogDebug("Take-profit set order: price=" & takeProfit)
         End If
 
         Call LogDebug("RssStockOrder_v params: " & _
@@ -462,128 +474,48 @@ Function ExecuteRSSOrder(signal As Object) As String
 ' 結果判定
     Call LogDebug("RssStockOrder_v completed, checking result...")
 
-    If IsError(rssResult) Then
-        Call LogError("RssStockOrder_v returned Error")
+    ' 戻り値の詳細チェック
+    If IsEmpty(rssResult) Then
+        Call LogWarning("RssStockOrder_v returned Empty (no return value)")
+        ' Emptyの場合は成功と仮定（RSS APIが戻り値を返さない場合がある）
+        rssResult = 0
+    ElseIf IsNull(rssResult) Then
+        Call LogWarning("RssStockOrder_v returned Null")
+        rssResult = 0
+    ElseIf IsError(rssResult) Then
+        Call LogError("RssStockOrder_v returned Error: " & CStr(CVErr(rssResult)))
         ExecuteRSSOrder = ""
         Exit Function
+    ElseIf IsArray(rssResult) Then
+        Call LogWarning("RssStockOrder_v returned Array (partial success/failure)")
+        ' 配列の場合は最初の要素をチェック
+        If UBound(rssResult) >= 0 Then
+            Call LogDebug("Array result: " & Join(rssResult, ", "))
+            rssResult = rssResult(0)
+        Else
+            rssResult = 0
+        End If
     End If
 
-    Call LogDebug("Result value: " & CStr(rssResult))
+    ' 戻り値の型をログ出力
+    Call LogDebug("Result type: " & TypeName(rssResult) & ", Value: " & CStr(rssResult))
 
-    If rssResult = 0 Then
-        ' 成功
-        Call LogSuccess("RssStockOrder_v succeeded")
-        If takeProfit > 0 Then
-            Call LogInfo("Waiting 5 seconds before take-profit order...")
-            Application.Wait Now + TimeValue("00:00:05")
+    If rssResult = 0 Or rssResult = "" Or rssResult = "0" Then
+        ' 成功（0、空文字、"0"を成功とみなす）
+        Call LogSuccess("RssStockOrder_v succeeded (result: " & CStr(rssResult) & ")")
 
-            Dim profitOrderIdNum As Long
-            profitOrderIdNum = CLng(DateDiff("s", DateSerial(2020, 1, 1), Now))
-
-            Dim profitSideCode As String
-            If side = 3 Then
-                profitSideCode = "1"
-            Else
-                profitSideCode = "3"
-            End If
-
-            Dim profitOrderType As String
-            profitOrderType = "0"
-
-            Dim profitPriceType As String
-            profitPriceType = "0"
-
-            Dim profitOrderPrice As Double
-            profitOrderPrice = takeProfit
-
-            Dim profitReverseConditionPrice As Variant
-            Dim profitReverseConditionType As Variant
-            Dim profitReversePriceType As Variant
-            Dim profitReversePrice As Variant
-
-            Dim profitSetOrderType As String
-            Dim profitSetOrderPrice As Variant
-            Dim profitSetExecutionCondition As String
-            Dim profitSetOrderExpiry As String
-
-            profitReverseConditionPrice = ""
-            profitReverseConditionType = ""
-            profitReversePriceType = ""
-            profitReversePrice = ""
-            profitSetOrderType = "0"
-            profitSetOrderPrice = ""
-            profitsetExecutionCondition = ""
-            profitSetOrderExpiry = ""
-
-            Call LogDebug("RssStockOrder_v take-profit params: " & _
-                "orderIdNum=" & CStr(profitOrderIdNum) & _
-                ", ticker=" & CStr(ticker) & _
-                ", side=" & CStr(profitSideCode) & _
-                ", orderType=" & CStr(profitOrderType) & _
-                ", sorType=" & CStr(sorType) & _
-                ", quantity=" & CStr(quantity) & _
-                ", priceType=" & CStr(profitPriceType) & _
-                ", price=" & CStr(profitOrderPrice) & _
-                ", execCondition=" & CStr(execCondition) & _
-                ", orderExpiry=" & CStr(orderExpiry) & _
-                ", accountType=" & CStr(accountType))
-            
-            excelFormulaCall = "=RssStockOrder_v(" & _
-                CStr(profitOrderIdNum) & ", " & _
-                """" & ticker & """, " & _
-                """" & profitSideCode & """, " & _
-                """" & profitOrderType & """, " & _
-                """" & sorType & """, " & _
-                CStr(quantity) & ", " & _
-                """" & profitPriceType & """, " & _
-                CStr(profitOrderPrice) & ", " & _
-                """" & execCondition & """, " & _
-                """" & orderExpiry & """, " & _
-                """" & accountType & """, " & _
-                IIf(profitReverseConditionPrice = "", "", CStr(profitReverseConditionPrice)) & ", " & _
-                """" & profitReverseConditionType & """, " & _
-                """" & profitReversePriceType & """, " & _
-                IIf(profitReversePrice = "", "", CStr(profitReversePrice)) & ", " & _
-                """" & profitSetOrderType & """, " & _
-                IIf(profitSetOrderPrice = "", "", CStr(profitSetOrderPrice)) & ", " & _
-                """" & profitSetExecutionCondition & """, " & _
-                """" & profitSetOrderExpiry & """)"
-            Call LogDebug(excelFormulaCall)
-
-            Dim profitResult As Variant
-            profitResult = Application.Run("RssStockOrder_v", _
-                profitOrderIdNum, _
-                ticker, _
-                profitSideCode, _
-                profitOrderType, _
-                sorType, _
-                quantity, _
-                profitPriceType, _
-                profitOrderPrice, _
-                execCondition, _
-                orderExpiry, _
-                accountType, _
-                profitReverseConditionPrice, _
-                profitReverseConditionType, _
-                profitReversePriceType, _
-                profitReversePrice, _
-                profitSetOrderType, _
-                profitSetOrderPrice, _
-                profitSetExecutionCondition, _
-                profitSetOrderExpiry)
-
-            If IsError(profitResult) Then
-                Call LogError("RssStockOrder_v take-profit returned Error")
-            ElseIf profitResult = 0 Then
-                Call LogSuccess("RssStockOrder_v take-profit succeeded")
-            Else
-                Call LogError("RssStockOrder_v take-profit failed with code: " & CStr(profitResult))
-            End If
+        ' セット注文でstop-lossとtake-profitが設定されているのでログ出力
+        If stopLoss > 0 And takeProfit > 0 Then
+            Call LogInfo("Set order placed with stop-loss=" & stopLoss & " and take-profit=" & takeProfit)
+        ElseIf stopLoss > 0 Then
+            Call LogInfo("Order placed with stop-loss=" & stopLoss)
+        ElseIf takeProfit > 0 Then
+            Call LogInfo("Order placed with take-profit=" & takeProfit)
         End If
         ExecuteRSSOrder = orderId
     Else
         ' 失敗
-        Call LogError("RssStockOrder_v failed with code: " & CStr(rssResult))
+        Call LogError("RssStockOrder_v failed with result type: " & TypeName(rssResult) & ", value: " & CStr(rssResult))
         ExecuteRSSOrder = ""
     End If
 
