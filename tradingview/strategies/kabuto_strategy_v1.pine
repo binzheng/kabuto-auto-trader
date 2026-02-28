@@ -10,18 +10,18 @@ strategy("Kabuto Strategy v1.0", "Kabuto", overlay=true, initial_capital=1000000
 // ============================================================================
 
 // --- 移動平均線設定 ---
-emaFastPeriod = input.int(5, "短期EMA期間", minval=1, group="移動平均線")
-emaMediumPeriod = input.int(25, "中期EMA期間", minval=1, group="移動平均線")
-emaSlowPeriod = input.int(75, "長期EMA期間", minval=1, group="移動平均線")
+emaFastPeriod = input.int(3, "短期EMA期間", minval=1, group="移動平均線")
+emaMediumPeriod = input.int(12, "中期EMA期間", minval=1, group="移動平均線")
+emaSlowPeriod = input.int(36, "長期EMA期間", minval=1, group="移動平均線")
 
 // --- RSIフィルター ---
 rsiPeriod = input.int(14, "RSI期間", minval=1, group="テクニカル指標")
-rsiLower = input.int(50, "RSI下限", minval=0, maxval=100, group="テクニカル指標")
-rsiUpper = input.int(70, "RSI上限", minval=0, maxval=100, group="テクニカル指標")
+rsiLower = input.int(52, "RSI下限", minval=0, maxval=100, group="テクニカル指標")
+rsiUpper = input.int(68, "RSI上限", minval=0, maxval=100, group="テクニカル指標")
 
 // --- 出来高フィルター ---
 volumePeriod = input.int(20, "出来高平均期間", minval=1, group="テクニカル指標")
-volumeMultiplier = input.float(1.2, "出来高倍率", minval=1.0, step=0.1, group="テクニカル指標")
+volumeMultiplier = input.float(1.1, "出来高倍率", minval=1.0, step=0.1, group="テクニカル指標")
 
 // --- ATR設定 ---
 atrPeriod = input.int(14, "ATR期間", minval=1, group="ATR設定")
@@ -32,6 +32,11 @@ minRrRatio = input.float(1.5, "最低リスクリワード比", minval=1.0, step
 // --- 最小値幅設定（手数料対策） ---
 minProfitPercent = input.float(1.0, "最小利益目標（%）", minval=0.5, step=0.1, group="ATR設定", tooltip="手数料を考慮した最小利益幅。ATRベースより小さい場合はこの値を使用")
 minStopPercent = input.float(0.5, "最小ストップロス（%）", minval=0.1, step=0.1, group="ATR設定", tooltip="最小ストップロス幅")
+
+// --- 利益最適化設定 ---
+enableDynamicTp = input.bool(true, "動的TP最適化", group="利益最適化", tooltip="スイングハイ（直近高値）をTPの参考にする。OFFならATR固定倍率のみ")
+swingLookback = input.int(5, "スイングハイ検出期間", minval=3, maxval=30, group="利益最適化", tooltip="ピボットハイの左右バー数。大きいほど重要な高値のみ検出")
+maxTpAtrMultiplier = input.float(6.0, "TP上限（ATR倍率）", minval=2.0, step=0.5, group="利益最適化", tooltip="デイトレードでTPが遠すぎるのを防ぐ上限")
 
 // --- リスク管理 ---
 maxDailyEntries = input.int(3, "1日最大エントリー数", minval=1, maxval=10, group="リスク管理")
@@ -47,7 +52,7 @@ enableAfternoonSession = input.bool(true, "後場取引", group="時間帯設定
 afternoonStart = input.int(1230, "後場開始（HHMM）", minval=0, maxval=2359, group="時間帯設定")
 afternoonEnd = input.int(1530, "後場終了（HHMM）", minval=0, maxval=2359, group="時間帯設定")
 
-forceCloseTime = input.int(1545, "強制決済時刻（HHMM）", minval=0, maxval=2359, group="時間帯設定")
+forceCloseTime = input.int(1525, "強制決済時刻（HHMM）", minval=0, maxval=2359, group="時間帯設定")
 
 // --- Webhook設定 ---
 webhookPassphrase = input.string("YOUR_SECRET_PASSPHRASE", "Webhook パスフレーズ", group="Webhook設定")
@@ -69,6 +74,31 @@ volumeAvg = ta.sma(volume, volumePeriod)
 
 // --- ATR ---
 atr = ta.atr(atrPeriod)
+
+// --- スイングハイ（レジスタンス）検出 ---
+pivotHigh = ta.pivothigh(high, swingLookback, swingLookback)
+
+// 直近スイングハイを配列で管理（最大5個）
+var float[] recentSwingHighs = array.new_float(0)
+if not na(pivotHigh)
+    array.unshift(recentSwingHighs, pivotHigh)
+    while array.size(recentSwingHighs) > 5
+        array.pop(recentSwingHighs)
+
+// エントリー価格より上で最も近いスイングハイを検索
+// R:R比が基準を満たさない場合はnaを返す
+findNearestSwingHigh(entry, sl) =>
+    nearest = float(na)
+    risk = entry - sl
+    for i = 0 to array.size(recentSwingHighs) - 1
+        sh = array.get(recentSwingHighs, i)
+        if sh > entry * 1.003  // 最低0.3%上（手数料バッファ）
+            reward = sh - entry
+            rr = reward / risk
+            if rr >= minRrRatio
+                if na(nearest) or sh < nearest
+                    nearest := sh
+    nearest
 
 // ============================================================================
 // エントリー条件
@@ -170,6 +200,7 @@ var float entryPrice = na
 var float stopLossPrice = na
 var float takeProfitPrice = na
 var float actualRrRatio = na
+var string tpMethodUsed = "atr"
 
 // エントリー時の価格・SL/TP計算
 if strategy.position_size == 0 and not na(entryPrice)
@@ -177,6 +208,7 @@ if strategy.position_size == 0 and not na(entryPrice)
     stopLossPrice := na
     takeProfitPrice := na
     actualRrRatio := na
+    tpMethodUsed := "atr"
 
 // ============================================================================
 // エントリーロジック
@@ -193,20 +225,35 @@ if longSignal
     // エントリー価格とSL/TPを計算
     entryPrice := close
 
-    // ATRベースのSL/TP
+    // --- SL計算（変更なし）---
     atrBasedStopLoss = atr * atrSlMultiplier
-    atrBasedTakeProfit = atr * atrTpMultiplier
-
-    // パーセンテージベースの最小値幅
     minStopAmount = entryPrice * (minStopPercent / 100)
-    minProfitAmount = entryPrice * (minProfitPercent / 100)
-
-    // ATRベースと最小値幅のうち大きい方を使用
     stopLossAmount = math.max(atrBasedStopLoss, minStopAmount)
-    takeProfitAmount = math.max(atrBasedTakeProfit, minProfitAmount)
-
     stopLossPrice := entryPrice - stopLossAmount
-    takeProfitPrice := entryPrice + takeProfitAmount
+
+    // --- TP計算（動的最適化）---
+    // ATRベースTP（フォールバック・最低ライン）
+    atrBasedTakeProfit = atr * atrTpMultiplier
+    minProfitAmount = entryPrice * (minProfitPercent / 100)
+    atrTpAmount = math.max(atrBasedTakeProfit, minProfitAmount)
+    atrTp = entryPrice + atrTpAmount
+
+    // TP上限（デイトレードで非現実的に遠いTPを防止）
+    maxTp = entryPrice + atr * maxTpAtrMultiplier
+
+    if enableDynamicTp
+        // スイングハイからTP候補を検索
+        nearestSwingHigh = findNearestSwingHigh(entryPrice, stopLossPrice)
+
+        if not na(nearestSwingHigh) and nearestSwingHigh <= maxTp
+            takeProfitPrice := nearestSwingHigh
+            tpMethodUsed := "swing_high"
+        else
+            takeProfitPrice := math.min(atrTp, maxTp)
+            tpMethodUsed := "atr"
+    else
+        takeProfitPrice := math.min(atrTp, maxTp)
+        tpMethodUsed := "atr"
 
     // リスクリワード比率の計算
     riskAmount = entryPrice - stopLossPrice
@@ -223,12 +270,13 @@ if longSignal
         lastEntryTime := time
 
         // エントリーログ（100株での利益見込みも表示）
-        expectedProfit = takeProfitAmount * 100
+        expectedProfit = rewardAmount * 100
         expectedLoss = stopLossAmount * 100
         log.info("✅ エントリー: " + str.tostring(entryPrice, "#.#") +
                  " | SL: " + str.tostring(stopLossPrice, "#.#") + " (-¥" + str.tostring(expectedLoss, "#,###") + ")" +
                  " | TP: " + str.tostring(takeProfitPrice, "#.#") + " (+¥" + str.tostring(expectedProfit, "#,###") + ")" +
-                 " | RR: " + str.tostring(actualRrRatio, "#.#") + ":1")
+                 " | RR: " + str.tostring(actualRrRatio, "#.#") + ":1" +
+                 " | TP方法: " + tpMethodUsed)
 
 // ============================================================================
 // エグジットロジック
@@ -263,7 +311,7 @@ if strategy.position_size == 0 and strategy.position_size[1] > 0
 
 // エントリーアラート
 if longSignal and actualRrRatio >= minRrRatio
-    alertMessage = '{"action": "buy","ticker": "' + syminfo.ticker + '","quantity": 100,"price": "market","entry_price": ' + str.tostring(entryPrice, "#.#") + ',"stop_loss": ' + str.tostring(stopLossPrice, "#.#") + ',"take_profit": ' + str.tostring(takeProfitPrice, "#.#") + ',"atr": ' + str.tostring(atr, "#.#") + ',"rr_ratio": ' + str.tostring(actualRrRatio, "#.#") + ',"rsi": ' + str.tostring(rsi, "#.#") + ',"timestamp": "' + str.tostring(time) + '","passphrase": "' + webhookPassphrase + '"}'
+    alertMessage = '{"action": "buy","ticker": "' + syminfo.ticker + '","quantity": 100,"price": "market","entry_price": ' + str.tostring(entryPrice, "#.#") + ',"stop_loss": ' + str.tostring(stopLossPrice, "#.#") + ',"take_profit": ' + str.tostring(takeProfitPrice, "#.#") + ',"tp_method": "' + tpMethodUsed + '","atr": ' + str.tostring(atr, "#.#") + ',"rr_ratio": ' + str.tostring(actualRrRatio, "#.#") + ',"rsi": ' + str.tostring(rsi, "#.#") + ',"timestamp": "' + str.tostring(time) + '","passphrase": "' + webhookPassphrase + '"}'
     alert(alertMessage, alert.freq_once_per_bar)
 
 // エグジットアラート（損切り）
@@ -304,11 +352,14 @@ bgcolor(isSafeTime ? color.new(color.green, 95) : color.new(color.red, 98), titl
 // --- エントリーシグナルのマーク ---
 plotshape(longSignal and actualRrRatio >= minRrRatio, "買いシグナル", style=shape.triangleup, location=location.belowbar, color=color.new(color.green, 0), size=size.small)
 
+// --- スイングハイ（レジスタンス）のマーク ---
+plotshape(enableDynamicTp and not na(pivotHigh), "スイングハイ", style=shape.diamond, location=location.abovebar, color=color.new(color.yellow, 30), size=size.tiny, offset=-swingLookback)
+
 // ============================================================================
 // 情報パネル
 // ============================================================================
 
-var table infoPanel = table.new(position.top_right, 2, 12, border_width=1, border_color=color.gray, frame_width=1, frame_color=color.gray)
+var table infoPanel = table.new(position.top_right, 2, 14, border_width=1, border_color=color.gray, frame_width=1, frame_color=color.gray)
 
 if barstate.islast
     // ヘッダー
@@ -368,12 +419,24 @@ if barstate.islast
     expectedTpYen = expectedTpAmount * 100
     table.cell(infoPanel, 1, 10, "¥" + str.tostring(expectedTpYen, "#,###") + "/100株", text_color=color.white)
 
+    // TP方法
+    table.cell(infoPanel, 0, 11, "TP方法", text_color=color.white)
+    tpMethodDisplay = tpMethodUsed == "swing_high" ? "スイングハイ" : "ATR"
+    tpMethodColor = tpMethodUsed == "swing_high" ? color.new(color.teal, 30) : color.new(color.gray, 30)
+    table.cell(infoPanel, 1, 11, tpMethodDisplay, bgcolor=tpMethodColor, text_color=color.white)
+
+    // 直近レジスタンス
+    table.cell(infoPanel, 0, 12, "直近レジスタンス", text_color=color.white)
+    nearestRes = array.size(recentSwingHighs) > 0 ? array.get(recentSwingHighs, 0) : na
+    resText = not na(nearestRes) ? str.tostring(nearestRes, "#.#") : "-"
+    table.cell(infoPanel, 1, 12, resText, text_color=color.white)
+
     // 総合判定
-    table.cell(infoPanel, 0, 11, "取引可否", text_color=color.white)
+    table.cell(infoPanel, 0, 13, "取引可否", text_color=color.white)
     canTrade = allRiskChecksPassed and strategy.position_size == 0
     tradeStatus = canTrade ? "✅" : "⏸️"
     tradeColor = canTrade ? color.new(color.green, 30) : color.new(color.red, 30)
-    table.cell(infoPanel, 1, 11, tradeStatus, bgcolor=tradeColor, text_color=color.white)
+    table.cell(infoPanel, 1, 13, tradeStatus, bgcolor=tradeColor, text_color=color.white)
 
 // ============================================================================
 // クールダウン表示（チャート上）
