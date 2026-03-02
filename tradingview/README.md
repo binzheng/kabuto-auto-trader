@@ -236,6 +236,92 @@ ATR倍率を調整：
 3. 対象銘柄を変更（高ボラティリティ銘柄を選択）
 4. タイムフレームを変更（15分足 ↔ 1時間足）
 
+### Q5. スクリプト更新後、複数アラートの設定変更が大変
+
+TradingView上で更新対象が多数ある場合は、ブラウザのDevToolsコンソールで一括更新スクリプトを実行できます。
+
+対象ファイル:
+- `tradingview/tools/bulk_update_alerts_console.js`
+- `tradingview/tools/bulk_update_alerts_playwright.js`（推奨）
+
+使い方:
+1. `jp.tradingview.com` でログインし、アラート一覧を開く
+2. ブラウザのDevTools Consoleを開く
+3. `bulk_update_alerts_console.js` の内容を貼り付けて実行
+4. 動作確認（dry-run）:
+   - `bulkUpdateTradingViewAlerts({ dryRun: true })`
+5. 実行:
+   - `bulkUpdateTradingViewAlerts()`
+
+注意:
+- TradingViewのUI変更でボタン文言が変わると動作しない場合があります
+- 実行前に少数アラートで必ずテストしてください
+- 本番稼働中のアラートに対して実行する場合は、実行時間帯に注意してください
+
+#### Playwright版（推奨）
+
+1. Playwrightをインストール
+   - `npm install playwright`
+2. 実行（初回はログイン案内後にEnter）
+   - `node tradingview/tools/bulk_update_alerts_playwright.js --max-updates=20`
+3. 事前確認（クリックなし）
+   - `node tradingview/tools/bulk_update_alerts_playwright.js --dry-run --max-updates=20`
+4. ブラウザ未インストールエラー時
+   - `npx playwright install`
+   - もしくはシステムChromeを使う:
+   - `node tradingview/tools/bulk_update_alerts_playwright.js --dry-run --max-updates=20 --channel=chrome`
+
+主なオプション:
+- `--dry-run` : クリックせず対象検出のみ
+- `--max-updates=20` : 最大更新件数
+- `--profile=.tv-playwright-profile` : ログインセッション保存先
+- `--headless` : ヘッドレス実行（通常は非推奨）
+- `--channel=chrome` : Playwright同梱ブラウザではなく、ローカルChromeを使用
+
+#### 有効期限一括変更（`bulk_update_expiry_playwright.js`）
+
+アラートの有効期限を一括で変更します。`--profile` はタイムフレームスクリプトと共通のため、ログイン済みの場合はそのまま使用できます。
+
+1. 実行（有効期限を 2027-01-01 23:59 に設定）
+   - `node tradingview/tools/bulk_update_expiry_playwright.js --expiry=2027-01-01 --max-updates=20`
+2. 時刻まで指定する場合
+   - `node tradingview/tools/bulk_update_expiry_playwright.js --expiry=2027-01-01T23:59 --max-updates=20`
+3. 事前確認（クリックなし）
+   - `node tradingview/tools/bulk_update_expiry_playwright.js --expiry=2027-01-01 --dry-run --max-updates=20`
+
+主なオプション:
+- `--expiry=YYYY-MM-DD[THH:mm]` : 変更後の有効期限（**必須**）。時刻省略時は `23:59` を使用
+- `--dry-run` : クリックせず対象検出のみ
+- `--max-updates=20` : 最大更新件数
+- `--profile=.tv-playwright-profile` : ログインセッション保存先
+- `--channel=chrome` : ローカルChromeを使用
+
+#### 条件（ストラテジーバージョン）一括変更（`bulk_update_condition_playwright.js`）
+
+アラートの条件欄に表示されているストラテジーのバージョンを一括変更します（例: `v4.0` → `v7.0`）。
+起動URLは Kabuto v7.0 が適用されているチャートをデフォルトとし、ウィンドウは最大化されます。
+
+1. 実行（v4.0 → v7.0）
+   - `node tradingview/tools/bulk_update_condition_playwright.js --max-updates=20`
+2. 事前確認（クリックなし）
+   - `node tradingview/tools/bulk_update_condition_playwright.js --dry-run --max-updates=5`
+3. バージョンを明示的に指定する場合
+   - `node tradingview/tools/bulk_update_condition_playwright.js --from-version=v4.0 --to-version=v7.0`
+
+主なオプション:
+- `--from-version=v4.0` : 変更前のバージョン文字列（デフォルト: `v4.0`）
+- `--to-version=v7.0` : 変更後のバージョン文字列（デフォルト: `v7.0`）
+- `--dry-run` : クリックせず対象検出のみ
+- `--max-updates=20` : 最大更新件数
+- `--profile=.tv-playwright-profile` : ログインセッション保存先（他スクリプトと共通）
+- `--channel=chrome` : ローカルChromeを使用
+- `--url=...` : 起動URL（デフォルト: `https://jp.tradingview.com/chart/2TEyPaCa/?symbol=TSE%3A9984`）
+
+注意:
+- チャートに v7.0 のストラテジーが適用されている必要があります
+- 起動後、アラートパネル（ベルアイコン）を手動で開いてから Enter を押してください
+- `data-qa-id="main-series-select-additional-info"` の値でバージョンを判定します
+
 ---
 
 ## セキュリティ注意事項
